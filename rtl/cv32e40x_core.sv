@@ -109,15 +109,14 @@ module cv32e40x_core import cv32e40x_pkg::*;
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
 
-  // CLIC Interface
-  input  logic                       clic_irq_i,
-  input  logic [SMCLIC_ID_WIDTH-1:0] clic_irq_id_i,
-  input  logic [ 7:0]                clic_irq_il_i,
-  input  logic [ 1:0]                clic_irq_priv_i,
-  input  logic                       clic_irq_hv_i,
-  output logic [SMCLIC_ID_WIDTH-1:0] clic_irq_id_o,
-  output logic                       clic_irq_mode_o,
-  output logic                       clic_irq_exit_o,
+  input  logic        clic_irq_i,
+  input  logic [ 9:0] clic_irq_id_i,
+  input  logic [ 7:0] clic_irq_il_i,
+  input  logic [ 1:0] clic_irq_priv_i,
+  input  logic        clic_irq_hv_i,
+  output logic [ 9:0] clic_irq_id_o,
+  output logic        clic_irq_mode_o,
+  output logic        clic_irq_exit_o,
 
   // Fencei flush handshake
   output logic        fencei_flush_req_o,
