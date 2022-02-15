@@ -186,6 +186,20 @@ typedef enum logic [1:0] {MUL_ALBL, MUL_ALBH, MUL_AHBL, MUL_AHBH} mul_state_e;
 // ALU divider FSM state encoding
 typedef enum logic [1:0] {DIV_IDLE, DIV_DIVIDE, DIV_DUMMY, DIV_FINISH} div_state_e;
 
+// AES Instructions
+parameter AES_OPCODE_WIDTH = 7;
+parameter AES_FUNC_WIDTH   = 6;
+
+typedef enum logic [AES_FUNC_WIDTH-1:0] {
+  AES32DSI =  5'b10101,
+  AES32DSMI = 5'b10111,
+  AES32ESI =  5'b10001,
+  AES32ESMI = 5'b10011
+} aes_func5_e;
+
+typedef enum logic [AES_OPCODE_WIDTH-1:0] {
+  AES32 = 6'b0110011
+} aes_opcode_e;
 
 /////////////////////////////////////////////////////////
 //    ____ ____    ____            _     _             //
