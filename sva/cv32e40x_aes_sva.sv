@@ -6,7 +6,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40x_mult_sva
+module cv32e40x_aes_sva
   import uvm_pkg::*;
   import cv32e40x_pkg::*;
   #(
@@ -22,19 +22,20 @@ module cv32e40x_mult_sva
    input logic        clk,
    input logic        rst_n,
 
+  // eXtension interface
    if_xif.xif_issue xif_issue,
    if_xif.xif_commit xif_commit,
    if_xif.xif_result xif_result,
 
    // Internal signals
-   input valid_aes_input, valid_aes_result,
+   input logic valid_aes_input, valid_aes_result,
    input logic issue_ready_aes,
    input logic is_instruction_not_kill,
    input logic encrypt_i, encrypt_middle_i, decrypt_i, decrypt_middle_i,
-   input logic byte_select_i
+   input logic [1:0] byte_select_i,
    input logic [X_RFR_WIDTH-1:0] rs1_i,rs2_i, result_aes_o, rd,
    input logic [31:0] instruction,
-   input logic [X_ID_WIDTH-1:0]
+   input logic [X_ID_WIDTH-1:0] instruction_id,
    input logic [4:0] rd_register_adr
    );
 
@@ -45,17 +46,17 @@ module cv32e40x_mult_sva
     logic correct_AES_opcode; 
     assign correct_AES_opcode = instruction[6:0] == AES32 ? 1 : 0;
     assert property (@(posedge clk) disable iff (!rst_n)
-                     ((instruction[6:0] == AES32) &&  issue_ready_aes && xif_issue.issue_req.valid|-> xif_issue.issue_resp.accept == 1 && xif_issue.issue_resp.writeback == 1)
+                     ((instruction[6:0] == AES32) &&  issue_ready_aes && xif_issue.issue_req.valid|-> xif_issue.issue_resp.accept == 1 && xif_issue.issue_resp.writeback == 1))
             `uvm_error("AES", "XIF AES offload successfull")
         else `uvm_error("AES", "XIF AES offload failed")
 
 //   // Check result for MUL
 //   logic [31:0] mul_result;
 //   assign mul_result = $signed(op_a_i) * $signed(op_b_i);
-//   a_mul_result : // check multiplication result for MUL
-//     assert property (@(posedge clk) disable iff (!rst_n)
-//                      (valid_i && (operator_i == MUL_M32)) |-> (result_o == mul_result))
-//       else `uvm_error("mult", "MUL result check failed")
+  // a_mul_result : // check multiplication result for MUL
+  //   assert property (@(posedge clk) disable iff (!rst_n)
+  //                    (valid_i && (operator_i == MUL_M32)) |-> (result_o == mul_result))
+  //     else `uvm_error("mult", "MUL result check failed")
 //   a_mul_valid : // check that MUL result is immediately qualified by valid_o
 //     assert property (@(posedge clk) disable iff (!rst_n)
 //                      (valid_i && (operator_i == MUL_M32)) |-> valid_o)

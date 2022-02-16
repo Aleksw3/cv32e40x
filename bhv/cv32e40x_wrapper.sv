@@ -333,12 +333,13 @@ module cv32e40x_wrapper
                .*);
 
   bind cv32e40x_aes:
-    aes_i //! Where is AES module instantiated? Its connected to XIF, but never instantiated
-    cv32e40x_aes_sva
-      aes_sva(.if_xif.coproc_issue(xif_issue_if),
-              .if_xif.coproc_commit(xif_commit_if),
-              .if_xif.coproc_result(xif_result_if),
+    cv32e40x_xif_aes //! Where is AES module instantiated? Its connected to XIF, but never instantiated
+    if_xif
+      aes_sva(.xif_issue(xif_issue_if),
+              .xif_commit(xif_commit_if),
+              .xif_result(xif_result_if),
               .*);
+  bind cv32e40x_xif_aes cv32e40x_aes_sva aes_sva_inst(aes_sva);
 
 `endif //  `ifndef COREV_ASSERT_OFF
 
