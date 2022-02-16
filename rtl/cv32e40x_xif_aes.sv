@@ -134,22 +134,19 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     begin : AES_FU_RESULTS
         if (rst_n == 1'b0)
         begin
-            
+            valid_aes_result =  0;
+            rd           = '0;
         end else 
         begin
-            if(xif_result.result_valid == 1 && xif_result.result_ready == 1)
-                xif_result.result_valid = 0;
-
-            if(ready_o) begin
-                xif_result.result.id = id_in_aes_fu;
-                xif_result.result.data      = rd_o;
-                xif_result.result.rd        = rd_register_adr;
-                xif_result.result.we        = 0;
-                xif_result.result_valid     = 1;
+            valid_aes_result =  0;
+            rd           = '0;
+            if(is_instruction_not_kill == 0 && ready_aes_output) begin
+                rd = result_aes_o;
+                valid_aes_result = 1;
             end
-            
         end
     end
+
 
 
     riscv_crypto_fu_saes32 
