@@ -29,6 +29,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     logic [X_RFR_WIDTH-1:0]  rs1_i, rs2_i, result_aes_o, rd;
     logic [X_ID_WIDTH-1:0]   instruction_id;
     logic [31:0]             instruction;
+    logic [4:0]              rd_register_adr;
 
 
 
@@ -53,16 +54,16 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     assign byte_select_i   = instruction[31:30];
     assign rd_register_adr = instruction[11:7];
 
-    assign issue_ready_aes = !xif_result.ready || (valid_aes_result && xif_result.ready);
+    assign issue_ready_aes = !valid_aes_result || (valid_aes_result && xif_result.ready);
     assign xif_issue.ready = issue_ready_aes;
 
     always_comb
     begin : ACCEPT_OFFLOADED_INSTRUCTION
-        is_instruction_accepted = 0;
+        accept_instruction = 0;
 
         if(xif_issue.issue_req.instr[6:0] == AES32 &&
            xif_issue.issue_req.valid &&
-           issue_ready) 
+           issue_ready_aes) 
         begin
             accept_instruction = 1;
         end

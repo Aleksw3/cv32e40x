@@ -187,8 +187,8 @@ typedef enum logic [1:0] {MUL_ALBL, MUL_ALBH, MUL_AHBL, MUL_AHBH} mul_state_e;
 typedef enum logic [1:0] {DIV_IDLE, DIV_DIVIDE, DIV_DUMMY, DIV_FINISH} div_state_e;
 
 // AES Instructions
-parameter AES_OPCODE_WIDTH = 7;
-parameter AES_FUNC_WIDTH   = 6;
+parameter AES_OPCODE_WIDTH = 6;
+parameter AES_FUNC_WIDTH   = 5;
 
 typedef enum logic [AES_FUNC_WIDTH-1:0] {
   AES32DSI =  5'b10101,
@@ -198,7 +198,7 @@ typedef enum logic [AES_FUNC_WIDTH-1:0] {
 } aes_func5_e;
 
 typedef enum logic [AES_OPCODE_WIDTH-1:0] {
-  AES32 = 6'b0110011
+  AES32 = 6'b110011
 } aes_opcode_e;
 
 /////////////////////////////////////////////////////////
