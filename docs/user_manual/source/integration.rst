@@ -182,7 +182,6 @@ Parameters
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
 
 
-
 Interfaces
 ----------
 
@@ -207,6 +206,7 @@ Interfaces
 +-------------------------+-------------------------+-----+--------------------------------------------+
 | ``mtvec_addr_i``        | 32                      | in  | ``mtvec`` address. Initial value for the   |
 <<<<<<< HEAD
+<<<<<<< HEAD
 |                         |                         |     | address part of :ref:`csr-mtvec `.         |
 |                         |                         |     | Must be 128-byte aligned                   |
 |                         |                         |     | (i.e. ``mtvec_addr_i[6:0]`` = 0).          |
@@ -215,6 +215,11 @@ Interfaces
 |                         |                         |     | Must be 4096-byte aligned                  |
 |                         |                         |     | (i.e. ``mtvec_addr_i[11:0]`` = 0).         |
 >>>>>>> 2a7982c (CLIC related documentation updates)
+=======
+|                         |                         |     | address part of :ref:`csr-mtvec `.         |
+|                         |                         |     | Must be 128-byte aligned                   |
+|                         |                         |     | (i.e. ``mtvec_addr_i[6:0]`` = 0).          |
+>>>>>>> ba8c342 (Fixing mtvec and mtvt alignment requirements. Better links for spec versions)
 |                         |                         |     | Do not change after enabling core          |
 |                         |                         |     | via ``fetch_enable_i``                     |
 +-------------------------+-------------------------+-----+--------------------------------------------+
