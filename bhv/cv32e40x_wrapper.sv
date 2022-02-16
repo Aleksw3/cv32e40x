@@ -343,15 +343,14 @@ module cv32e40x_wrapper
                .nmi_addr_i(core_i.nmi_addr_i),
                .*);
 
-  // bind cv32e40x_aes:
-  //   aes_xif_i
-    cv32e40x_aes_sva
-      aes_sva(.clk(clk_i),
-              .rst_n(rst_ni),
-              .xif_issue(xif_coproc_issue_if),
-              .xif_commit(xif_coproc_commit_if),               
-              .xif_result(xif_coproc_result_if),
+  bind cv32e40x_aes:
+    cv32e40x_xif_aes //! Where is AES module instantiated? Its connected to XIF, but never instantiated
+    if_xif
+      aes_sva(.xif_issue(xif_issue_if),
+              .xif_commit(xif_commit_if),
+              .xif_result(xif_result_if),
               .*);
+  bind cv32e40x_xif_aes cv32e40x_aes_sva aes_sva_inst(aes_sva);
 
 
 
