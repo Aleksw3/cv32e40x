@@ -32,6 +32,7 @@
   `include "cv32e40x_prefetch_unit_sva.sv"
   `include "cv32e40x_sleep_unit_sva.sv"
   `include "cv32e40x_rvfi_sva.sv"
+  `include "cv32e40x_aes_sva.sv"
 `endif
 
 `include "cv32e40x_wrapper.vh"
@@ -330,6 +331,14 @@ module cv32e40x_wrapper
                .ebreak_in_wb_i(core_i.controller_i.controller_fsm_i.ebreak_in_wb),
                .nmi_addr_i(core_i.nmi_addr_i),
                .*);
+
+  bind cv32e40x_aes:
+    aes_i //! Where is AES module instantiated? Its connected to XIF, but never instantiated
+    cv32e40x_aes_sva
+      aes_sva(.if_xif.coproc_issue(xif_issue_if),
+              .if_xif.coproc_commit(xif_commit_if),
+              .if_xif.coproc_result(xif_result_if),
+              .*);
 
 `endif //  `ifndef COREV_ASSERT_OFF
 
