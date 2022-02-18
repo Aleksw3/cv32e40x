@@ -340,14 +340,14 @@ module cv32e40x_wrapper
                .nmi_addr_i(core_i.nmi_addr_i),
                .*);
 
-  bind cv32e40x_aes:
-    aes_xif_i
+  // bind cv32e40x_aes:
+  //   aes_xif_i
     cv32e40x_aes_sva
       aes_sva(.clk(clk_i),
               .rst_n(rst_ni),
-              .xif_issue(xif_issue_if),
-              .xif_commit(xif_commit_if),               
-              .xif_result(xif_result_if)                 
+              .xif_issue(xif_coproc_issue_if),
+              .xif_commit(xif_coproc_commit_if),               
+              .xif_result(xif_coproc_result_if)                 
               );
 
 
@@ -592,11 +592,11 @@ module cv32e40x_wrapper
             .X_ECS_XS   ( '0 )) 
     aes_xif_i (
             .clk(clk),
-            .rst_n(rst_n),
+            .rst_n(rst_ni),
 
-            .xif_issue(xif_issue_if),         // Issue interface
-            .xif_commit(xif_commit_if),        // Commit Interface
-            .xif_result(xif_result_if),         // Result interface
+            .xif_issue(xif_coproc_issue_if),         // Issue interface
+            .xif_commit(xif_coproc_commit_if),        // Commit Interface
+            .xif_result(xif_coproc_result_if),         // Result interface
             .*);
 
 endmodule
