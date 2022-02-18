@@ -350,8 +350,8 @@ module cv32e40x_wrapper
               .rst_n(rst_ni),
               .xif_issue(xif_coproc_issue_if),
               .xif_commit(xif_coproc_commit_if),               
-              .xif_result(xif_coproc_result_if)                 
-              );
+              .xif_result(xif_coproc_result_if),
+              .*);
 
 
 
