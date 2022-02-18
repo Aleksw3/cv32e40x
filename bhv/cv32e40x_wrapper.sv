@@ -110,10 +110,14 @@ module cv32e40x_wrapper
   output logic [5:0]  data_atop_o,
   input  logic        data_exokay_i,
 
+<<<<<<< HEAD
   // Cycle Count
   output logic [63:0] mcycle_o,
 
   // eXtension interface
+=======
+  // eXtension interface CPU
+>>>>>>> 4b178a9 (WIP: sva verification)
   if_xif.cpu_compressed xif_compressed_if,
   if_xif.cpu_issue      xif_issue_if,
   if_xif.cpu_commit     xif_commit_if,
@@ -344,13 +348,14 @@ module cv32e40x_wrapper
                .*);
 
   bind cv32e40x_aes:
-    cv32e40x_xif_aes //! Where is AES module instantiated? Its connected to XIF, but never instantiated
-    if_xif
-      aes_sva(.xif_issue(xif_issue_if),
-              .xif_commit(xif_commit_if),
-              .xif_result(xif_result_if),
-              .*);
-  bind cv32e40x_xif_aes cv32e40x_aes_sva aes_sva_inst(aes_sva);
+    aes_xif_i
+    cv32e40x_aes_sva
+      aes_sva(.clk(clk_i),
+              .rst_n(rst_ni),
+              .xif_issue(xif_issue_if),
+              .xif_commit(xif_commit_if),               
+              .xif_result(xif_result_if)                 
+              );
 
 
 
