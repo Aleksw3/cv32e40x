@@ -331,16 +331,6 @@ module cv32e40x_wrapper
                .ebreak_in_wb_i(core_i.controller_i.controller_fsm_i.ebreak_in_wb),
                .nmi_addr_i(core_i.nmi_addr_i),
                .*);
-
-  bind cv32e40x_aes:
-    cv32e40x_xif_aes //! Where is AES module instantiated? Its connected to XIF, but never instantiated
-    if_xif
-      aes_sva(.xif_issue(xif_issue_if),
-              .xif_commit(xif_commit_if),
-              .xif_result(xif_result_if),
-              .*);
-  bind cv32e40x_xif_aes cv32e40x_aes_sva aes_sva_inst(aes_sva);
-
 `endif //  `ifndef COREV_ASSERT_OFF
 
     cv32e40x_core_log
@@ -567,6 +557,24 @@ module cv32e40x_wrapper
             .xif_mem_if(xif_mem_if),
             .xif_mem_result_if(xif_mem_result_if),
             .xif_result_if(xif_result_if),
+            .*);
+
+    // instantiate aes module
+    cv32e40x_xif_aes
+        #(
+            .X_NUM_RS   ( 2 ),  // Number of register file read ports that can be used by the eXtension interface            .X_ID_WIDTH ( 4)  // Width of ID field.
+            .X_MEM_WIDTH( 32 ), // Memory access width for loads/stores via the eXtension interface
+            .X_RFR_WIDTH( 32 ), // Register file read access width for the eXtension interface
+            .X_RFW_WIDTH( 32 ), // Register file write access width for the eXtension interface
+            .X_MISA     ( '0 ), // MISA extensions implemented on the eXtension interface
+            .X_ECS_XS   ( '0 )) 
+    aes_xif_i (
+            .clk(clk),
+            .rst_n(rst_n),
+
+            .xif_issue(xif_issue_if),         // Issue interface
+            .xif_commit(xif_commit_if),        // Commit Interface
+            .xif_result(xif_result_if),         // Result interface
             .*);
 
 endmodule

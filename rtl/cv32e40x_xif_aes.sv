@@ -54,15 +54,15 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     assign byte_select_i   = instruction[31:30];
     assign rd_register_adr = instruction[11:7];
 
-    assign issue_ready_aes = !valid_aes_result || (valid_aes_result && xif_result.ready);
-    assign xif_issue.ready = issue_ready_aes;
+    assign issue_ready_aes = !valid_aes_result || (valid_aes_result && xif_result.result_ready);
+    assign xif_issue.issue_ready = issue_ready_aes;
 
     always_comb
     begin : ACCEPT_OFFLOADED_INSTRUCTION
         accept_instruction = 0;
 
         if(xif_issue.issue_req.instr[6:0] == AES32 &&
-           xif_issue.issue_req.valid &&
+           xif_issue.issue_valid &&
            issue_ready_aes) 
         begin
             accept_instruction = 1;
@@ -122,7 +122,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     always_comb 
     begin : commit_kill
         is_instruction_not_kill = 1;
-        if(xif_commit.valid && xif_commit.commit.kill) begin
+        if(xif_commit.commit_valid && xif_commit.commit.commit_kill) begin
             if(instruction_id == xif_commit.commit.id) begin
                 is_instruction_not_kill = 0;
             end
