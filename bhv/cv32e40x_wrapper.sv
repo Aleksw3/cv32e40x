@@ -595,11 +595,19 @@ module cv32e40x_wrapper
             .X_ECS_XS   ( '0 )) 
     aes_xif_i (
             .clk(clk),
+<<<<<<< HEAD
             .rst_n(rst_ni),
 
             .xif_issue(xif_coproc_issue_if),         // Issue interface
             .xif_commit(xif_coproc_commit_if),        // Commit Interface
             .xif_result(xif_coproc_result_if),         // Result interface
+=======
+            .rst_n(rst_n),
+
+            .xif_issue(xif_issue_if),         // Issue interface
+            .xif_commit(xif_commit_if),        // Commit Interface
+            .xif_result(xif_result_if),         // Result interface
+>>>>>>> b3141b4 (Fixed naming errors and instantiated aes module in wrapper)
             .*);
 
 endmodule
