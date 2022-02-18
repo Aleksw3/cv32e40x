@@ -110,14 +110,10 @@ module cv32e40x_wrapper
   output logic [5:0]  data_atop_o,
   input  logic        data_exokay_i,
 
-<<<<<<< HEAD
   // Cycle Count
   output logic [63:0] mcycle_o,
 
   // eXtension interface
-=======
-  // eXtension interface CPU
->>>>>>> 4b178a9 (WIP: sva verification)
   if_xif.cpu_compressed xif_compressed_if,
   if_xif.cpu_issue      xif_issue_if,
   if_xif.cpu_commit     xif_commit_if,
@@ -347,14 +343,14 @@ module cv32e40x_wrapper
                .nmi_addr_i(core_i.nmi_addr_i),
                .*);
 
-  bind cv32e40x_aes:
-    aes_xif_i
+  // bind cv32e40x_aes:
+  //   aes_xif_i
     cv32e40x_aes_sva
       aes_sva(.clk(clk_i),
               .rst_n(rst_ni),
-              .xif_issue(xif_issue_if),
-              .xif_commit(xif_commit_if),               
-              .xif_result(xif_result_if)                 
+              .xif_issue(xif_coproc_issue_if),
+              .xif_commit(xif_coproc_commit_if),               
+              .xif_result(xif_coproc_result_if)                 
               );
 
 
@@ -601,6 +597,7 @@ module cv32e40x_wrapper
     aes_xif_i (
             .clk(clk),
 <<<<<<< HEAD
+<<<<<<< HEAD
             .rst_n(rst_ni),
 
             .xif_issue(xif_coproc_issue_if),         // Issue interface
@@ -613,6 +610,13 @@ module cv32e40x_wrapper
             .xif_commit(xif_commit_if),        // Commit Interface
             .xif_result(xif_result_if),         // Result interface
 >>>>>>> b3141b4 (Fixed naming errors and instantiated aes module in wrapper)
+=======
+            .rst_n(rst_ni),
+
+            .xif_issue(xif_coproc_issue_if),         // Issue interface
+            .xif_commit(xif_coproc_commit_if),        // Commit Interface
+            .xif_result(xif_coproc_result_if),         // Result interface
+>>>>>>> 7a9bf76 (Fixes)
             .*);
 
 endmodule
