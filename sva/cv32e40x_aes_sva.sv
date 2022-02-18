@@ -9,46 +9,26 @@
 module cv32e40x_aes_sva
   import uvm_pkg::*;
   import cv32e40x_pkg::*;
-  #(
-    parameter int          X_NUM_RS        =  2,  // Number of register file read ports that can be used by the eXtension interface
-    parameter int          X_ID_WIDTH      =  4,  // Width of ID field.
-    parameter int          X_MEM_WIDTH     =  32, // Memory access width for loads/stores via the eXtension interface
-    parameter int          X_RFR_WIDTH     =  32, // Register file read access width for the eXtension interface
-    parameter int          X_RFW_WIDTH     =  32, // Register file write access width for the eXtension interface
-    parameter logic [31:0] X_MISA          =  '0, // MISA extensions implemented on the eXtension interface
-    parameter logic [ 1:0] X_ECS_XS        =  '0  
-  )
   (// Module boundary signals
    input logic        clk,
    input logic        rst_n,
 
   // eXtension interface
-   if_xif.xif_issue xif_issue,
-   if_xif.xif_commit xif_commit,
-   if_xif.xif_result xif_result,
-
-   // Internal signals
-   input logic valid_aes_input, valid_aes_result,
-   input logic issue_ready_aes,
-   input logic is_instruction_not_kill,
-   input logic encrypt_i, encrypt_middle_i, decrypt_i, decrypt_middle_i,
-   input logic [1:0] byte_select_i,
-   input logic [X_RFR_WIDTH-1:0] rs1_i,rs2_i, result_aes_o, rd,
-   input logic [31:0] instruction,
-   input logic [X_ID_WIDTH-1:0] instruction_id,
-   input logic [4:0] rd_register_adr
+   if_xif.coproc_issue xif_issue,
+   if_xif.coproc_commit xif_commit,
+   if_xif.coproc_result xif_result
    );
 
   ////////////////////////////////////////
   ////  Assertions on module boundary ////
   ////////////////////////////////////////
 
-    logic correct_AES_opcode; 
-    assign correct_AES_opcode = instruction[6:0] == AES32 ? 1 : 0;
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ((instruction[6:0] == AES32) &&  issue_ready_aes && xif_issue.issue_req.valid|-> xif_issue.issue_resp.accept == 1 && xif_issue.issue_resp.writeback == 1))
-            `uvm_error("AES", "XIF AES offload successfull")
-        else `uvm_error("AES", "XIF AES offload failed")
+    // logic correct_AES_opcode; 
+    // assign correct_AES_opcode = instruction[6:0] == AES32 ? 1 : 0;
+    // assert property (@(posedge clk) disable iff (!rst_n)
+    //                  ((instruction[6:0] == AES32) &&  issue_ready_aes && xif_issue.issue_req.valid|-> xif_issue.issue_resp.accept == 1 && xif_issue.issue_resp.writeback == 1))
+    //         `uvm_error("AES", "XIF AES offload successfull")
+    //     else `uvm_error("AES", "XIF AES offload failed")
 
 //   // Check result for MUL
 //   logic [31:0] mul_result;
@@ -220,4 +200,4 @@ module cv32e40x_aes_sva
 //                      (mulh_acc == shift_result_ll_lh_hl_shift))
 //       else `uvm_error("mult", "MUL_H accumulated 'ah x bl' wrong")
 
-endmodule // cv32e40x_mult
+endmodule // cv32e40x_aes_sva

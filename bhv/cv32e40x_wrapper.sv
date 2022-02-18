@@ -120,6 +120,14 @@ module cv32e40x_wrapper
   if_xif.cpu_mem_result xif_mem_result_if,
   if_xif.cpu_result     xif_result_if,
 
+  // eXtension Interface coproc
+  if_xif.coproc_compressed xif_coproc_compressed_if,
+  if_xif.coproc_issue xif_coproc_issue_if,
+  if_xif.coproc_commit xif_coproc_commit_if,
+  if_xif.coproc_mem xif_coproc_mem_if,
+  if_xif.coproc_mem_result xif_coproc_mem_result_if,
+  if_xif.coproc_result xif_coproc_result_if,
+
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
 
@@ -331,6 +339,20 @@ module cv32e40x_wrapper
                .ebreak_in_wb_i(core_i.controller_i.controller_fsm_i.ebreak_in_wb),
                .nmi_addr_i(core_i.nmi_addr_i),
                .*);
+
+  bind cv32e40x_aes:
+    aes_xif_i
+    cv32e40x_aes_sva
+      aes_sva(.clk(clk_i),
+              .rst_n(rst_ni),
+              .xif_issue(xif_issue_if),
+              .xif_commit(xif_commit_if),               
+              .xif_result(xif_result_if)                 
+              );
+
+
+
+
 `endif //  `ifndef COREV_ASSERT_OFF
 
     cv32e40x_core_log
