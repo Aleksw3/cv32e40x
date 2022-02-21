@@ -9,7 +9,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
   parameter logic [ 1:0] X_ECS_XS        =  '0  // Default value for mstatus.XS
 )
 (
-  input  logic          clk,
+  input  logic          clk_i,
   input  logic          rst_n,
 
   // eXtension interface
@@ -85,7 +85,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     end
 
     // Pass values from XIF to the AES FU
-    always_ff @(posedge clk, negedge rst_n)
+    always_ff @(posedge clk_i, negedge rst_n)
         begin : ID_FU_AES
         if (rst_n == 1'b0)
         begin
@@ -130,7 +130,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     end
 
     // Results from AES functional unit
-    always_ff @(posedge clk, negedge rst_n)
+    always_ff @(posedge clk_i, negedge rst_n)
     begin : AES_FU_RESULTS
         if (rst_n == 1'b0)
         begin

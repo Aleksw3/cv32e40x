@@ -23,39 +23,39 @@ module cv32e40x_aes_sva
    input logic        rst_n,
 
   // eXtension interface
-   if_xif.monitor_issue xif_issue,
-   if_xif.monitor_commit xif_commit,
-   if_xif.monitor_result xif_result
+   if_xif.monitor_issue monitor_issue,
+   if_xif.monitor_commit monitor_commit,
+   if_xif.monitor_result monitor_result,
 
     // Internal signals
-  //  input logic valid_aes_input, 
-  //  input logic valid_aes_result,
-  //  input logic issue_ready_aes,
-  //  input logic is_instruction_not_kill,
-  //  input logic encrypt_i, 
-  //  input logic encrypt_middle_i, 
-  //  input logic decrypt_i, 
-  //  input logic decrypt_middle_i,
-  //  input logic [1:0] byte_select_i,
-  //  input logic [X_RFR_WIDTH-1:0] rs1_i,
-  //  input logic [X_RFR_WIDTH-1:0] rs2_i, 
-  //  input logic [X_RFR_WIDTH-1:0] result_aes_o, 
-  //  input logic [X_RFR_WIDTH-1:0] rd,
-  //  input logic [31:0] instruction,
-  //  input logic [X_ID_WIDTH-1:0] instruction_id,
-  //  input logic [4:0] rd_register_adr
+   input logic valid_aes_input, 
+   input logic valid_aes_result,
+   input logic issue_ready_aes,
+   input logic is_instruction_not_kill,
+   input logic encrypt_i, 
+   input logic encrypt_middle_i, 
+   input logic decrypt_i, 
+   input logic decrypt_middle_i,
+   input logic [1:0] byte_select_i,
+   input logic [X_RFR_WIDTH-1:0] rs1_i,
+   input logic [X_RFR_WIDTH-1:0] rs2_i, 
+   input logic [X_RFR_WIDTH-1:0] result_aes_o, 
+   input logic [X_RFR_WIDTH-1:0] rd,
+   input logic [31:0] instruction,
+   input logic [X_ID_WIDTH-1:0] instruction_id,
+   input logic [4:0] rd_register_adr
    );
 
   ////////////////////////////////////////
   ////  Assertions on module boundary ////
   ////////////////////////////////////////
 
-    // logic correct_AES_opcode; 
-    // assign correct_AES_opcode = instruction[6:0] == AES32 ? 1 : 0;
-    // assert property (@(posedge clk) disable iff (!rst_n)
-    //                  ((instruction[6:0] == AES32) &&  issue_ready_aes && xif_issue.issue_req.valid|-> xif_issue.issue_resp.accept == 1 && xif_issue.issue_resp.writeback == 1))
-    //         `uvm_error("AES", "XIF AES offload successfull")
-    //     else `uvm_error("AES", "XIF AES offload failed")
+    logic correct_AES_opcode; 
+    assign correct_AES_opcode = instruction[6:0] == AES32 ? 1 : 0;
+    assert property (@(posedge clk) disable iff (!rst_n)
+                     ((instruction[6:0] == AES32) &&  issue_ready_aes && xif_issue.issue_valid|-> xif_issue.issue_resp.accept == 1 && xif_issue.issue_resp.writeback == 1))
+            `uvm_error("AES", "XIF AES offload successfull")
+        else `uvm_error("AES", "XIF AES offload failed")
 
 //   // Check result for MUL
 //   logic [31:0] mul_result;

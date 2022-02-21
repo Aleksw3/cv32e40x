@@ -129,14 +129,6 @@ module cv32e40x_wrapper
   if_xif.coproc_mem_result  xif_coproc_mem_result_if,
   if_xif.coproc_result      xif_coproc_result_if,
 
-  // eXtension Interface monitor
-  if_xif.monitor_compressed  xif_monitor_compressed,
-  if_xif.monitor_issue       xif_monitor_issue_if,
-  if_xif.monitor_commit      xif_monitor_commit_if,
-  if_xif.monitor_mem         xif_monitor_mem_if,
-  if_xif.monitor_mem_result  xif_monitor_mem_result_if,
-  if_xif.monitor_result      xif_monitor_result_if,
-
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
 
@@ -351,14 +343,13 @@ module cv32e40x_wrapper
                .nmi_addr_i(core_i.nmi_addr_i),
                .*);
 
-  bind cv32e40x_aes:
+  bind cv32e40x_xif_aes:
     aes_xif_i
     cv32e40x_aes_sva
       aes_sva(.clk(clk_i),
-              .rst_n(rst_ni),
-              .xif_issue(xif_monitor_issue_if),
-              .xif_commit(xif_monitor_commit_if),               
-              .xif_result(xif_monitor_result_if),
+              .monitor_issue(dut_wrap.xif.monitor_issue),
+              .monitor_commit(dut_wrap.xif.monitor_commit),               
+              .monitor_result(dut_wrap.xif.monitor_result),
               .*);
 
 
@@ -603,7 +594,7 @@ module cv32e40x_wrapper
             .X_MISA     ( '0 ), // MISA extensions implemented on the eXtension interface
             .X_ECS_XS   ( '0 )) 
     aes_xif_i (
-            .clk(clk),
+            .clk_i(clk_i),
             .rst_n(rst_ni),
 
             .xif_issue(xif_coproc_issue_if),         // Issue interface
