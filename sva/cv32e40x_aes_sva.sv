@@ -23,27 +23,27 @@ module cv32e40x_aes_sva
    input logic        rst_n,
 
   // eXtension interface
-   if_xif.coproc_issue xif_issue,
-   if_xif.coproc_commit xif_commit,
-   if_xif.coproc_result xif_result,
+   if_xif.monitor_issue xif_issue,
+   if_xif.monitor_commit xif_commit,
+   if_xif.monitor_result xif_result
 
     // Internal signals
-   input logic valid_aes_input, 
-   input logic valid_aes_result,
-   input logic issue_ready_aes,
-   input logic is_instruction_not_kill,
-   input logic encrypt_i, 
-   input logic encrypt_middle_i, 
-   input logic decrypt_i, 
-   input logic decrypt_middle_i,
-   input logic [1:0] byte_select_i,
-   input logic [X_RFR_WIDTH-1:0] rs1_i,
-   input logic [X_RFR_WIDTH-1:0] rs2_i, 
-   input logic [X_RFR_WIDTH-1:0] result_aes_o, 
-   input logic [X_RFR_WIDTH-1:0] rd,
-   input logic [31:0] instruction,
-   input logic [X_ID_WIDTH-1:0] instruction_id,
-   input logic [4:0] rd_register_adr
+  //  input logic valid_aes_input, 
+  //  input logic valid_aes_result,
+  //  input logic issue_ready_aes,
+  //  input logic is_instruction_not_kill,
+  //  input logic encrypt_i, 
+  //  input logic encrypt_middle_i, 
+  //  input logic decrypt_i, 
+  //  input logic decrypt_middle_i,
+  //  input logic [1:0] byte_select_i,
+  //  input logic [X_RFR_WIDTH-1:0] rs1_i,
+  //  input logic [X_RFR_WIDTH-1:0] rs2_i, 
+  //  input logic [X_RFR_WIDTH-1:0] result_aes_o, 
+  //  input logic [X_RFR_WIDTH-1:0] rd,
+  //  input logic [31:0] instruction,
+  //  input logic [X_ID_WIDTH-1:0] instruction_id,
+  //  input logic [4:0] rd_register_adr
    );
 
   ////////////////////////////////////////
