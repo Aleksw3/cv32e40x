@@ -30,7 +30,8 @@ Instantiation Template
       .NUM_MHPMCOUNTERS         (         1 ),
       .PMA_NUM_REGIONS          (         1 ),
       .PMA_CFG                  ( PMA_CFG[] ),
-      .SMCLIC                   (         0 )
+      .SMCLIC                   (         0 ),
+      .SMCLIC_ID_WIDTH          (         0 )
   ) u_core (
       // Clock and reset
       .clk_i                    (),
@@ -73,6 +74,9 @@ Instantiation Template
       .data_err_i               (),
       .data_exokay_i            (),
 
+      // Cycle Count
+      .mcycle_o                 (),
+
       // eXtension interface
       .xif_compressed_if        (),
       .xif_issue_if             (),
@@ -83,6 +87,15 @@ Instantiation Template
 
        // Interrupt interface
       .irq_i                    (),
+
+      .clic_irq_i               (),
+      .clic_irq_id_i            (),
+      .clic_irq_il_i            (),
+      .clic_irq_priv_i          (),
+      .clic_irq_hv_i            (),
+      .clic_irq_id_o            (),
+      .clic_irq_mode_o          (),
+      .clic_irq_exit_o          (),
 
       // Fencei flush handshake
       .fencei_flush_req_o       (),
@@ -157,11 +170,17 @@ Parameters
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
 | ``PMA_NUM_REGIONS``          | int (0..16)    | 0             | Number of PMA regions                                              |
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
-| ``PMA_CFG[]``                | pma_region_t   | PMA_R_DEFAULT | PMA configuration.                                                 |
-|                              |                |               | Array of pma_region_t with PMA_NUM_REGIONS entries, see :ref:`pma` |
+| ``PMA_CFG[]``                | pma_cfg_t      | PMA_R_DEFAULT | PMA configuration.                                                 |
+|                              |                |               | Array of pma_cfg_t with PMA_NUM_REGIONS entries, see :ref:`pma`    |
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
 | ``SMCLIC``                   | int (0..1 )    | 0             | Is Smclic supported?                                               |
 +------------------------------+----------------+---------------+--------------------------------------------------------------------+
+| ``SMCLIC_ID_WIDTH``          | int (6..10 )   | 6             | Width of ``clic_irq_id_i`` and ``clic_irq_id_o``. The maximum      |
+|                              |                |               | number of supported interrupts in CLIC mode is                     |
+|                              |                |               | ``2^SMCLIC_ID_WIDTH``. Trap vector table alignment is restricted   |
+|                              |                |               | to at least ``2^(2+SMCLIC_ID_WIDTH)``, see :ref:`csr-mtvt`.        |
++------------------------------+----------------+---------------+--------------------------------------------------------------------+
+
 
 Interfaces
 ----------
@@ -186,9 +205,9 @@ Interfaces
 |                         |                         |     | core via ``fetch_enable_i``                |
 +-------------------------+-------------------------+-----+--------------------------------------------+
 | ``mtvec_addr_i``        | 32                      | in  | ``mtvec`` address. Initial value for the   |
-|                         |                         |     | address part of :ref:`csr-mtvec`.          |
-|                         |                         |     | Must be 256-byte aligned                   |
-|                         |                         |     | (i.e. ``mtvec_addr_i[7:0]``  = 0).         |
+|                         |                         |     | address part of :ref:`csr-mtvec `.         |
+|                         |                         |     | Must be 128-byte aligned                   |
+|                         |                         |     | (i.e. ``mtvec_addr_i[6:0]`` = 0).          |
 |                         |                         |     | Do not change after enabling core          |
 |                         |                         |     | via ``fetch_enable_i``                     |
 +-------------------------+-------------------------+-----+--------------------------------------------+
@@ -218,7 +237,11 @@ Interfaces
 +-------------------------+----------------------------------------------------------------------------+
 | ``data_*``              | Load-store unit interface, see :ref:`load-store-unit`                      |
 +-------------------------+----------------------------------------------------------------------------+
+| ``mcycle_o``            | Cycle Counter Output                                                       |
++-------------------------+----------------------------------------------------------------------------+
 | ``irq_*``               | Interrupt inputs, see :ref:`exceptions-interrupts`                         |
++-------------------------+----------------------------------------------------------------------------+
+| ``clic_*``              | CLIC interface, see :ref:`exceptions-interrupts`                           |
 +-------------------------+----------------------------------------------------------------------------+
 | ``debug_*``             | Debug interface, see :ref:`debug-support`                                  |
 +-------------------------+-------------------------+-----+--------------------------------------------+
@@ -245,3 +268,4 @@ Interfaces
 +-------------------------+----------------------------------------------------------------------------+
 | ``xif_result_if``       | eXtension result interface, see :ref:`x_result_if`                         |
 +-------------------------+----------------------------------------------------------------------------+
+
