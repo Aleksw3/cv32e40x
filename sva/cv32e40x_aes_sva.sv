@@ -28,12 +28,19 @@ module cv32e40x_aes_sva
    if_xif.coproc_result xif_result,
 
     // Internal signals
-   input logic valid_aes_input, valid_aes_result,
+   input logic valid_aes_input, 
+   input logic valid_aes_result,
    input logic issue_ready_aes,
    input logic is_instruction_not_kill,
-   input logic encrypt_i, encrypt_middle_i, decrypt_i, decrypt_middle_i,
+   input logic encrypt_i, 
+   input logic encrypt_middle_i, 
+   input logic decrypt_i, 
+   input logic decrypt_middle_i,
    input logic [1:0] byte_select_i,
-   input logic [X_RFR_WIDTH-1:0] rs1_i,rs2_i, result_aes_o, rd,
+   input logic [X_RFR_WIDTH-1:0] rs1_i,
+   input logic [X_RFR_WIDTH-1:0] rs2_i, 
+   input logic [X_RFR_WIDTH-1:0] result_aes_o, 
+   input logic [X_RFR_WIDTH-1:0] rd,
    input logic [31:0] instruction,
    input logic [X_ID_WIDTH-1:0] instruction_id,
    input logic [4:0] rd_register_adr
