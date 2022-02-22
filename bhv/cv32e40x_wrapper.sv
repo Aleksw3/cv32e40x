@@ -51,7 +51,7 @@ module cv32e40x_wrapper
   parameter bit          A_EXT                        = 0,
   parameter b_ext_e      B_EXT                        = B_NONE,
   parameter m_ext_e      M_EXT                        = M,
-  parameter bit          X_EXT                        = 0,
+  parameter bit          X_EXT                        = 1,
   parameter int          X_NUM_RS                     = 2,
   parameter int          X_ID_WIDTH                   = 4,
   parameter int          X_MEM_WIDTH                  = 32,
