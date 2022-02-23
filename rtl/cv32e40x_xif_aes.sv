@@ -42,22 +42,14 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     assign xif_issue.issue_resp.exc       = 0; //? what is a synchronous exception
 
 
-    // XIF result interface response
-    assign xif_result.result_valid = valid_aes_result;
-    assign xif_result.result.id    = instruction_id;
-    assign xif_result.result.data  = rd;
-    assign xif_result.result.rd    = rd_register_adr;
-    assign xif_result.result.we    = 1;
 
 
     assign valid_aes_input         = is_instruction_accepted;
     assign byte_select_i   = instruction[31:30];
     assign rd_register_adr = instruction[11:7];
 
-    // FAccept instruction
-    
-
-    assign issue_ready_aes = !valid_aes_result || (valid_aes_result && xif_result.result_ready);
+    // Accept instruction
+    //! TODO issue_ready_aes
     assign xif_issue.issue_ready = issue_ready_aes;
 
     always_comb
@@ -72,7 +64,6 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         end
     end
 
-    //TODO rename signals
     always_comb
     begin : ONEHOT_AES_ROUND_SELECT
         decrypt_i        = 0;
@@ -124,28 +115,9 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         end
     end
 
-    always_comb 
-    begin : commit_kill
-        is_instruction_not_kill = 1;
-        if(xif_commit.commit_valid && xif_commit.commit.commit_kill) begin
-            if(instruction_id == xif_commit.commit.id) begin
-                is_instruction_not_kill = 0;
-            end
-        end
-    end
 
-    // Results from AES functional unit
-    //TODO not neccessary
-    always_comb
-    begin : AES_FU_RESULTS
-        valid_aes_result =  0;
-        rd           = '0;
-        if(is_instruction_not_kill && ready_aes_output) begin
-            rd = result_aes_o;
-            valid_aes_result = 1;
-        end
-    end
-
+    // Results
+    
 
 
     riscv_crypto_fu_saes32 
