@@ -34,8 +34,8 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
 
 
     // XIF issue interface response
-    assign xif_issue.issue_resp.accept    = is_instruction_accepted;
-    assign xif_issue.issue_resp.writeback = is_instruction_accepted;
+    assign xif_issue.issue_resp.accept    = accept_instruction;
+    assign xif_issue.issue_resp.writeback = accept_instruction;
     assign xif_issue.issue_resp.dualwrite = 0;
     assign xif_issue.issue_resp.loadstore = 0;
     assign xif_issue.issue_resp.ecswrite  = 0;
@@ -53,6 +53,9 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     assign valid_aes_input         = is_instruction_accepted;
     assign byte_select_i   = instruction[31:30];
     assign rd_register_adr = instruction[11:7];
+
+    // FAccept instruction
+    
 
     assign issue_ready_aes = !valid_aes_result || (valid_aes_result && xif_result.result_ready);
     assign xif_issue.issue_ready = issue_ready_aes;
@@ -76,12 +79,14 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         decrypt_middle_i = 0;
         encrypt_i        = 0;
         encrypt_middle_i = 0;
-        unique case(instruction[29:25])
-            AES32DSI:  decrypt_i        = 1;
-            AES32DSMI: decrypt_middle_i = 1;
-            AES32ESI:  encrypt_i        = 1;
-            AES32ESMI: encrypt_middle_i = 1;
-        endcase
+        if(valid_aes_input) begin
+            unique case(instruction[29:25])
+                AES32DSI:  decrypt_i        = 1;
+                AES32DSMI: decrypt_middle_i = 1;
+                AES32ESI:  encrypt_i        = 1;
+                AES32ESMI: encrypt_middle_i = 1;
+            endcase
+        end
     end
 
     // Pass values from XIF to the AES FU
@@ -100,8 +105,8 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
             rs2_i            = '0;
             instruction_id   = '0;
             instruction      = '0;
-
             is_instruction_accepted = accept_instruction;
+            
 
             if(accept_instruction) begin
                 instruction = xif_issue.issue_req.instr;
@@ -130,20 +135,14 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     end
 
     // Results from AES functional unit
-    always_ff @(posedge clk_i, negedge rst_n)
+    //TODO not neccessary
+    always_comb
     begin : AES_FU_RESULTS
-        if (rst_n == 1'b0)
-        begin
-            valid_aes_result =  0;
-            rd           = '0;
-        end else 
-        begin
-            valid_aes_result =  0;
-            rd           = '0;
-            if(is_instruction_not_kill == 0 && ready_aes_output) begin
-                rd = result_aes_o;
-                valid_aes_result = 1;
-            end
+        valid_aes_result =  0;
+        rd           = '0;
+        if(is_instruction_not_kill && ready_aes_output) begin
+            rd = result_aes_o;
+            valid_aes_result = 1;
         end
     end
 
