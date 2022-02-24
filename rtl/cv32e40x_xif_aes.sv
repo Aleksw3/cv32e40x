@@ -24,6 +24,9 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     logic is_instruction_not_kill;
     logic encrypt_middle_i, encrypt_i, decrypt_i, decrypt_middle_i;
     logic valid_aes_result;
+    logic commit_valid, commit_kill, commit_id;
+    logic is_commit_kill, is_commit_accept, kill_instruction, commit_instruction;
+    logic save_commit;
 
     logic [1:0]              byte_select_i;
     logic [X_RFR_WIDTH-1:0]  rs1_i, rs2_i, result_aes_o, rd;
@@ -139,7 +142,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         end else 
         begin
             commit_valid = xif_commit.commit_valid;
-            commit_kill  = xif_commit.commit.kill;
+            commit_kill  = xif_commit.commit.commit_kill;
             commit_id    = xif_commit.commit.id;
         end
     end
@@ -171,7 +174,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
 
     assign xif_result.result_valid = ready_aes_output && (save_commit || commit_instruction);
 
-    always_ff @( posedge clk, negedge rst_n ) 
+    always_ff @(posedge clk_i, negedge rst_n ) 
     begin : SAVE_COMMIT_WHEN_RESULT_READY_i_LOW
         if(rst_n == 1'b0)
             save_commit = 1'b0;
@@ -205,9 +208,6 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         .rd              (result_aes_o)     , //[31:0]// output destination register value.
         .ready           (ready_aes_output)   // Compute finished?
     );
-
-
-
 
 
 endmodule  // cv32e40x_xif_aes

@@ -139,8 +139,8 @@ module cv32e40x_aes_sva
     logic [X_ID_WIDTH] id;
         (offload_instruction,
         id = monitor_issue.issue_req.id) ##[0:$] 
-        (monitor_commit.commit_valid &&
-         monitor_commit.commit.kill  &&
+        monitor_commit.commit_valid &&
+         monitor_commit.commit.commit_kill  &&
          monitor_commit.commit.id == id
          |-> ##[0:5]
          monitor_result.result.id == id &&
@@ -153,12 +153,12 @@ module cv32e40x_aes_sva
 
     //Check that instruction is not output before commit has verified instruction
     property commited_id;
-                    logic [X_ID_WIDTH-1:0] id;
-                    (monitor_commit.commit_valid      &&
-                     monitor_commit.commit.commit_kill  == 0,
-                     id = monitor_commit.commit.id)
-                    |->
-                    ##[0:$] monitor_result.result.id == id;
+        logic [X_ID_WIDTH-1:0] id;
+        (monitor_commit.commit_valid      &&
+            monitor_commit.commit.commit_kill  == 0,
+            id = monitor_commit.commit.id)
+        |->
+        ##[0:$] monitor_result.result.id == id;
     endproperty
 
     assert property(@(posedge clk) disable iff (!rst_n) commited_id)    
