@@ -42,23 +42,25 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     assign xif_issue.issue_resp.ecswrite  = 0;
     assign xif_issue.issue_resp.exc       = 0; //? what is a synchronous exception
 
+    // XIF result interface
+    assign xif_result.result.data    = result_aes_o;
+    assign xif_result.result.rd      = rd_register_adr;
+    assign xif_result.result.id      = instruction_id;
+    assign xif_result.result.we      = 1'b1;
+    assign xif_result.result.ecswe   = 1'b0;
+    assign xif_result.result.exc     = 1'b0;
+    assign xif_result.result.exccode = '0;
 
-    // XIF result interface response
-    assign xif_result.result_valid = valid_aes_result;
-    assign xif_result.result.id    = instruction_id;
-    assign xif_result.result.data  = rd;
-    assign xif_result.result.rd    = rd_register_adr;
-    assign xif_result.result.we    = 1;
+
 
 
     assign valid_aes_input         = is_instruction_accepted;
     assign byte_select_i   = instruction[31:30];
     assign rd_register_adr = instruction[11:7];
 
-    // FAccept instruction
-    
+    // Accept instruction
+    assign issue_ready_aes = !is_instruction_accepted || (kill_instruction || (xif_result.result_valid && xif_result.result_ready));
     assign xif_issue.issue_ready = issue_ready_aes;
-    assign issue_ready_aes = !valid_aes_result || (valid_aes_result && xif_result.result_ready);
 
     always_comb
     begin : ACCEPT_OFFLOADED_INSTRUCTION
@@ -72,7 +74,6 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         end
     end
 
-    //TODO rename signals
     always_comb
     begin : ONEHOT_AES_ROUND_SELECT
         decrypt_i        = 0;
@@ -105,10 +106,12 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
             rs2_i            = '0;
             instruction_id   = '0;
             instruction      = '0;
-            is_instruction_accepted = accept_instruction;
-            
 
-            if(accept_instruction) begin
+            if (!(valid_aes_input) || (kill_instruction || (xif_result.result_valid && xif_result.result_ready)))
+                is_instruction_accepted = accept_instruction;
+
+            if(accept_instruction) 
+            begin
                 instruction = xif_issue.issue_req.instr;
                 instruction_id = xif_issue.issue_req.id;
 
@@ -124,28 +127,63 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         end
     end
 
+
+    // Commit interface
+    always_ff @(posedge clk_i, negedge rst_n) 
+    begin : COMMIT_INTERFACE
+        if(rst_n == 1'b0)
+        begin
+            commit_valid = '0;
+            commit_kill  = '0;
+            commit_id    = '0;
+        end else 
+        begin
+            commit_valid = xif_commit.commit_valid;
+            commit_kill  = xif_commit.commit.kill;
+            commit_id    = xif_commit.commit.id;
+        end
+    end
+
+
+    // Commit or kill instruction
     always_comb 
-    begin : commit_kill
-        is_instruction_not_kill = 1;
-        if(xif_commit.commit_valid && xif_commit.commit.commit_kill) begin
-            if(instruction_id == xif_commit.commit.id) begin
-                is_instruction_not_kill = 0;
-            end
+    begin : TO_BE_KILLED_OR_NOT_TO_BE_KILLED
+        is_commit_kill     = 1'b0;
+        is_commit_accept   = 1'b0;
+        kill_instruction   = 1'b0;
+        commit_instruction = 1'b0;
+
+        if (commit_valid && commit_kill)
+            is_commit_kill = 1'b1;
+
+        if (commit_valid && !commit_kill)
+            is_commit_accept = 1'b1;
+
+        if (commit_id == instruction_id) 
+        begin
+            if (is_commit_kill)
+                kill_instruction = 1'b1;
+            else if (is_commit_accept)
+                commit_instruction = 1'b1;
         end
     end
 
-    // Results from AES functional unit
-    //TODO not neccessary
-    always_comb
-    begin : AES_FU_RESULTS
-        valid_aes_result =  0;
-        rd           = '0;
-        if(is_instruction_not_kill && ready_aes_output) begin
-            rd = result_aes_o;
-            valid_aes_result = 1;
+
+    assign xif_result.result_valid = ready_aes_output && (save_commit || commit_instruction);
+
+    always_ff @( posedge clk, negedge rst_n ) 
+    begin : SAVE_COMMIT_WHEN_RESULT_READY_i_LOW
+        if(rst_n == 1'b0)
+            save_commit = 1'b0;
+        else begin
+            if (xif_result.result_ready) //Synchronous reset when result_ready_i is high
+                save_commit = 1'b0;
+            else if (xif_result.result_ready == 1'b0 && save_commit == 1'b0)
+                save_commit = commit_instruction;
         end
     end
 
+    
 
 
     riscv_crypto_fu_saes32 
