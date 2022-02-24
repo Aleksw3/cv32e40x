@@ -23,7 +23,6 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     logic issue_ready_aes;
     logic is_instruction_not_kill;
     logic encrypt_middle_i, encrypt_i, decrypt_i, decrypt_middle_i;
-    logic valid_aes_result;
     logic commit_valid, commit_kill, commit_id;
     logic is_commit_kill, is_commit_accept, kill_instruction, commit_instruction;
     logic save_commit;
@@ -51,8 +50,9 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     assign xif_result.result.id      = instruction_id;
     assign xif_result.result.we      = 1'b1;
     assign xif_result.result.ecswe   = 1'b0;
+    assign xif_result.result.ecsdata =   '0;
     assign xif_result.result.exc     = 1'b0;
-    assign xif_result.result.exccode = '0;
+    assign xif_result.result.exccode =   '0;
 
 
 
@@ -84,6 +84,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         encrypt_i        = 0;
         encrypt_middle_i = 0;
         if(valid_aes_input) begin
+            //? Will get a warning from compiler since the instruction value can be different when not active
             unique case(instruction[29:25])
                 AES32DSI:  decrypt_i        = 1;
                 AES32DSMI: decrypt_middle_i = 1;
@@ -105,11 +106,6 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
             is_instruction_accepted = 0;
         end else 
         begin
-            rs1_i            = '0;
-            rs2_i            = '0;
-            instruction_id   = '0;
-            instruction      = '0;
-
             if (!(valid_aes_input) || (kill_instruction || (xif_result.result_valid && xif_result.result_ready)))
                 is_instruction_accepted = accept_instruction;
 
@@ -131,24 +127,8 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     end
 
 
-    // Commit interface
-    always_ff @(posedge clk_i, negedge rst_n) 
-    begin : COMMIT_INTERFACE
-        if(rst_n == 1'b0)
-        begin
-            commit_valid = '0;
-            commit_kill  = '0;
-            commit_id    = '0;
-        end else 
-        begin
-            commit_valid = xif_commit.commit_valid;
-            commit_kill  = xif_commit.commit.commit_kill;
-            commit_id    = xif_commit.commit.id;
-        end
-    end
-
-
     // Commit or kill instruction
+    //TODO clean, doesn't need to be like this...
     always_comb 
     begin : TO_BE_KILLED_OR_NOT_TO_BE_KILLED
         is_commit_kill     = 1'b0;
@@ -156,13 +136,13 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         kill_instruction   = 1'b0;
         commit_instruction = 1'b0;
 
-        if (commit_valid && commit_kill)
+        if (xif_commit.commit_valid && xif_commit.commit.commit_kill)
             is_commit_kill = 1'b1;
 
-        if (commit_valid && !commit_kill)
+        if (xif_commit.commit_valid && !xif_commit.commit.commit_kill)
             is_commit_accept = 1'b1;
 
-        if (commit_id == instruction_id) 
+        if (xif_commit.commit.id == instruction_id) 
         begin
             if (is_commit_kill)
                 kill_instruction = 1'b1;

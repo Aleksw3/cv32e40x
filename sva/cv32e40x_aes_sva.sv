@@ -29,7 +29,6 @@ module cv32e40x_aes_sva
 
     // Internal signals
    input logic valid_aes_input, 
-   input logic valid_aes_result,
    input logic ready_aes_output,
    input logic issue_ready_aes,
    input logic is_instruction_not_kill,
@@ -50,7 +49,7 @@ module cv32e40x_aes_sva
   ////////////////////////////////////////
   ////  Assertions on module boundary ////
   ////////////////////////////////////////
-
+    // TODO test that the onehot encoding is correct!
     
     sequence offload_instruction;
       monitor_issue.issue_req.instr[6:0] == AES32 && monitor_issue.issue_valid && monitor_issue.issue_ready;
@@ -95,13 +94,13 @@ module cv32e40x_aes_sva
         
         (offload_instruction,
         id = monitor_issue.issue_req.id)
-        ##[1:$] monitor_result.result_valid 
+        ##[2:$] monitor_result.result_valid 
         |->
         monitor_result.result.id == id;
     endproperty
 
-    assert property (@(posedge clk) disable iff (!rst_n) result_id_o)
-        else `uvm_error("XIF", "ERROR: accepted id not output")
+    // assert property (@(posedge clk) disable iff (!rst_n) result_id_o)
+    //     else `uvm_error("XIF", "ERROR: accepted id not output")
 
 
 
