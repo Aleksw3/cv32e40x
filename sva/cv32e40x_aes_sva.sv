@@ -51,56 +51,178 @@ module cv32e40x_aes_sva
   ////  Assertions on module boundary ////
   ////////////////////////////////////////
 
-    // logic correct_AES_opcode; 
+    
     sequence offload_instruction;
-      monitor_issue.issue_req.instr[6:0] == AES32 && monitor_issue.issue_valid;
+      monitor_issue.issue_req.instr[6:0] == AES32 && monitor_issue.issue_valid && monitor_issue.issue_ready;
     endsequence
 
 
-    assert property (@(posedge clk) disable iff (!rst_n)
-                    (monitor_issue.issue_valid))
-            `uvm_warning("XIF", $sformatf("XIF offload SUCCESS! instruction opcode = %0h", monitor_issue.issue_req.instr[6:0]))
-        else `uvm_warning("XIF", $sformatf("XIF offload failed: instruction opcode = %0h", monitor_issue.issue_req.instr[6:0]));
+    sequence issue_response_accept;
+        monitor_issue.issue_resp.accept         && // AES accepts instruction
+        monitor_issue.issue_resp.writeback      && // AES will perform a writeback to rd
+        monitor_issue.issue_resp.dualwrite == 0 && // No write to rd and rd+1
+        monitor_issue.issue_resp.dualread  == 0 && // No read from rsn and rsn+1
+        monitor_issue.issue_resp.loadstore == 0 && // FU will not perform a load/store operation
+        monitor_issue.issue_resp.ecswrite  == 0 && // Coprocessor will not write back to status registers
+        monitor_issue.issue_resp.exc       == 0;   // No synchronous exception (cause i dont know what it is)
+    endsequence
+
+    sequence issue_response_not_accept;
+        monitor_issue.issue_resp.accept    == 0 && // AES accepts instruction
+        monitor_issue.issue_resp.writeback == 0 && // AES will perform a writeback to rd
+        monitor_issue.issue_resp.dualwrite == 0 && // No write to rd and rd+1
+        monitor_issue.issue_resp.dualread  == 0 && // No read from rsn and rsn+1
+        monitor_issue.issue_resp.loadstore == 0 && // FU will not perform a load/store operation
+        monitor_issue.issue_resp.ecswrite  == 0 && // Coprocessor will not write back to status registers
+        monitor_issue.issue_resp.exc       == 0;   // No synchronous exception (cause i dont know what it is)
+    endsequence
 
 
+    // XIF issue interface
     assert property (@(posedge clk) disable iff (!rst_n)
-                     ((offload_instruction) 
-                        |-> monitor_issue.issue_resp.accept == 1 && monitor_issue.issue_resp.writeback == 1))
-            `uvm_warning("AES", "Op code correct, Offload success")
-        else `uvm_error("AES", "Didnt accept correct opcode??")
+                    (offload_instruction) |-> issue_response_accept )
+        else `uvm_error("XIF", "ERROR in XIF issue response for accepted instruction");
 
     assert property (@(posedge clk) disable iff (!rst_n)
-                     ((offload_instruction) 
-                        |=> valid_aes_input))
-            `uvm_warning("AES", "Offloaded instruction enables FU")
-        else `uvm_error("AES", "offloaded instruction not valid on FU???")
+                    (monitor_issue.issue_req.instr[6:0] != AES32 &&
+                     monitor_issue.issue_valid &&
+                     monitor_issue.issue_ready) |-> issue_response_not_accept )
+        else `uvm_error("XIF", "ERROR in XIF issue response for not accepted instruction");
 
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ((offload_instruction) 
-                        |=> ready_aes_output && valid_aes_result))
-            `uvm_warning("AES", "FU finished, returned valid")
-        else `uvm_error("AES", "FU valid output fail")
+    // Check that id of accepted instruction was output at some point
+    property result_id_o;
+        logic [X_ID_WIDTH-1:0] id ;
+        
+        (offload_instruction,
+        id = monitor_issue.issue_req.id)
+        ##[1:$] monitor_result.result_valid 
+        |->
+        monitor_result.result.id == id;
+    endproperty
 
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ((offload_instruction) 
-                        |=> monitor_result.result_valid))
-            `uvm_warning("XIF", "Result is valid")
-        else `uvm_error("XIF", "Result is not valid after being accepted")
+    assert property (@(posedge clk) disable iff (!rst_n) result_id_o)
+        else `uvm_error("XIF", "ERROR: accepted id not output")
+
+
+
+
+    // XIF commit interface
+        //Check if the id of result has been killed
+    property killed_id;
+        logic [X_ID_WIDTH-1:0] id;
+        (monitor_commit.commit_valid && 
+            monitor_commit.commit.commit_kill &&
+            monitor_commit.commit.id ==  instruction_id , 
+            id = monitor_commit.commit.id)
+        |-> 
+        ##[0:$] monitor_result.result.id != id; //Optimize this assertion (Many of these will slow verification down by a lot)
+    endproperty
+
+    assert property (@(posedge clk) disable iff (!rst_n) killed_id)
+        else `uvm_error("XIF", "Result ID was killed by commit interface")
+
+
+    property commit_valid_id_after_accept;
+        logic [X_ID_WIDTH] id;
+        (offload_instruction,
+        id = monitor_issue.issue_req.id)
+        |->
+        ##[0:10] monitor_commit.commit_valid &&
+        monitor_commit.commit.id == id
+    endproperty
+
+    assert property (@(posedge clk) disable iff (!rst_n) commit_valid_id_after_accept)
+        else `uvm_error("XIF", "Commit valid or commit id was not input after accepted instruction")
+
+    // Accepted instruction that is commited, should be output
+    property instr_accept_to_result;
+    logic [X_ID_WIDTH] id;
+        (offload_instruction,
+        id = monitor_issue.issue_req.id) ##[0:$] 
+        (monitor_commit.commit_valid &&
+         monitor_commit.commit.kill  &&
+         monitor_commit.commit.id == id
+         |-> ##[0:5]
+         monitor_result.result.id == id &&
+         monitor_result.result_valid &&
+         monitor_result.result_ready;   
+    endproperty
+
+    assert property(@(posedge clk) disable iff (!rst_n) instr_accept_to_result)
+        else `uvm_error("XIF", "Result never received")
+
+    //Check that instruction is not output before commit has verified instruction
+    property commited_id;
+                    logic [X_ID_WIDTH-1:0] id;
+                    (monitor_commit.commit_valid      &&
+                     monitor_commit.commit.commit_kill  == 0,
+                     id = monitor_commit.commit.id)
+                    |->
+                    ##[0:$] monitor_result.result.id == id;
+    endproperty
+
+    assert property(@(posedge clk) disable iff (!rst_n) commited_id)    
+        else `uvm_error("XIF", "Result never output a commited instruction")
+
+
+    // XIF result interface
+    // assert property (@(posedge clk) disable iff (!rst_n)
+    //                 monitor_result.result_valid
+    //                     )
     
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ((offload_instruction) 
-                        |=> monitor_result.result.id == $past(monitor_issue.issue_req.id, 1)))
-            `uvm_warning("XIF", "Output id is same as input id")
-        else `uvm_error("AES", "Output id is NOT same as input id")
-
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ((monitor_commit.commit_valid) |-> monitor_commit.commit.commit_kill ))
-            `uvm_warning("AES", "Commit kill is activated")
-        else `uvm_warning("AES", "Commit is valid but not kill")
     
-    assert property (@(posedge clk) disable iff (!rst_n)
-                     ((monitor_result.result_valid) |->  monitor_result.result_ready ))
-            `uvm_warning("XIF", "XIF ready and valid became high")
-        else `uvm_warning("AES", "XIF ready and valid was never high at the same time")
+    
+
+
+
+
+
+
+    // OLD 
+    // assert property (@(posedge clk) disable iff (!rst_n)
+    //                 (monitor_issue.issue_valid))
+    //         `uvm_warning("XIF", $sformatf("XIF offload SUCCESS! instruction opcode = %0h", monitor_issue.issue_req.instr[6:0]))
+    //     else `uvm_warning("XIF", $sformatf("XIF offload failed: instruction opcode = %0h", monitor_issue.issue_req.instr[6:0]));
+
+
+    // assert property (@(posedge clk) disable iff (!rst_n)
+    //                  ((offload_instruction) 
+    //                     |-> monitor_issue.issue_resp.accept == 1 && monitor_issue.issue_resp.writeback == 1))
+    //         `uvm_warning("AES", "Op code correct, Offload success")
+    //     else `uvm_error("AES", "Didnt accept correct opcode??")
+
+    // assert property (@(posedge clk) disable iff (!rst_n)
+    //                  ((offload_instruction) 
+    //                     |=> valid_aes_input))
+    //         `uvm_warning("AES", "Offloaded instruction enables FU")
+    //     else `uvm_error("AES", "offloaded instruction not valid on FU???")
+
+    // assert property (@(posedge clk) disable iff (!rst_n)
+    //                  ((offload_instruction) 
+    //                     |=> ready_aes_output && valid_aes_result))
+    //         `uvm_warning("AES", "FU finished, returned valid")
+    //     else `uvm_error("AES", "FU valid output fail")
+
+    // assert property (@(posedge clk) disable iff (!rst_n)
+    //                  ((offload_instruction) 
+    //                     |=> monitor_result.result_valid))
+    //         `uvm_warning("XIF", "Result is valid")
+    //     else `uvm_error("XIF", "Result is not valid after being accepted")
+    
+    // assert property (@(posedge clk) disable iff (!rst_n)
+    //                  ((offload_instruction) 
+    //                     |=> monitor_result.result.id == $past(monitor_issue.issue_req.id, 1)))
+    //         `uvm_warning("XIF", "Output id is same as input id")
+    //     else `uvm_error("AES", "Output id is NOT same as input id")
+
+    // assert property (@(posedge clk) disable iff (!rst_n)
+    //                  ((monitor_commit.commit_valid) |-> monitor_commit.commit.commit_kill ))
+    //         `uvm_warning("AES", "Commit kill is activated")
+    //     else `uvm_warning("AES", "Commit is valid but not kill")
+    
+    // assert property (@(posedge clk) disable iff (!rst_n)
+    //                  ((monitor_result.result_valid) |->  monitor_result.result_ready ))
+    //         `uvm_warning("XIF", "XIF ready and valid became high")
+    //     else `uvm_warning("AES", "XIF ready and valid was never high at the same time")
 
 endmodule // cv32e40x_aes_sva
