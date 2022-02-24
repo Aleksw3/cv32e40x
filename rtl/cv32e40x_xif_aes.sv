@@ -37,6 +37,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     assign xif_issue.issue_resp.accept    = accept_instruction;
     assign xif_issue.issue_resp.writeback = accept_instruction;
     assign xif_issue.issue_resp.dualwrite = 0;
+    assign xif_issue.issue_resp.dualread  = 0;
     assign xif_issue.issue_resp.loadstore = 0;
     assign xif_issue.issue_resp.ecswrite  = 0;
     assign xif_issue.issue_resp.exc       = 0; //? what is a synchronous exception
@@ -56,9 +57,8 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
 
     // FAccept instruction
     
-
-    assign issue_ready_aes = !valid_aes_result || (valid_aes_result && xif_result.result_ready);
     assign xif_issue.issue_ready = issue_ready_aes;
+    assign issue_ready_aes = !valid_aes_result || (valid_aes_result && xif_result.result_ready);
 
     always_comb
     begin : ACCEPT_OFFLOADED_INSTRUCTION
