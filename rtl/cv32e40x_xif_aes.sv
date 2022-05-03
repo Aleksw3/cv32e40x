@@ -57,7 +57,10 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
 
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34af9f0cef73ca654181729027e8e4d225a2423f
     assign valid_aes_input = is_instruction_accepted;
     assign byte_select_i   = instruction[26:25];
     assign rd_register_adr = instruction[11:7];
@@ -177,6 +180,9 @@ generate if(PROTECTED) begin
     riscv_crypto_fu_saes32_protected
     #(
 
+generate if(PROTECTED) begin
+    riscv_crypto_fu_saes32_protected
+    #(
     )
     aes_i
     (
