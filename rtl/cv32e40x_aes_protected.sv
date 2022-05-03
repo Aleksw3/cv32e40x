@@ -18,6 +18,8 @@ module riscv_crypto_fu_saes32_protected #(
     output wire [31:0] rd,
     output wire        ready
 );
+wire [7:0] sub_byte_share_A, sub_byte_share_B;
+
 
 assign decrypt      = op_saes32_decs  || op_saes32_decsm;
 assign middle_round = op_saes32_decsm || op_saes32_encsm;
@@ -34,21 +36,23 @@ assign bytes_in_share_B[1] = rs3[15: 8];
 assign bytes_in_share_B[2] = rs3[23:16];
 assign bytes_in_share_B[3] = rs3[31:24];
 
+logic [7:0] byte_sel_share_A;
+logic [7:0] byte_sel_share_B;
 assign byte_sel_share_A = bytes_in_share_A[bs];
 assign byte_sel_share_B = bytes_in_share_B[bs];
 
 // Mix Column GF(256) scalar multiplication functions
 function [7:0] xtime2;
     input [7:0] byte_in;
-    wire msb;
-    wire [7:0] modulo;
-    wire [7:0] byte_in_shifted;
+    logic msb;
+    logic [7:0] modulo;
+    logic [7:0] byte_in_shifted;
     begin
-    msb = byte_in[7];
-    modulo = msb ? 8'h1b : 8'b0;
-    byte_in_shifted = {byte_in[6:0], 1'b0};
-    
-    xtime2  = byte_in_shifted ^ modulo;
+        msb = byte_in[7];
+        modulo = msb ? 8'h1b : 8'b0;
+        byte_in_shifted = {byte_in[6:0], 1'b0};
+        
+        xtime2  = byte_in_shifted ^ modulo;
     end
 endfunction
 
@@ -63,13 +67,13 @@ function [7:0] xtimeN;
         (scalar[3] ? xtime2(xtime2(xtime2( byte_in))): 0) ;
 endfunction
 
-wire [ 7:0] mix_b3_shareA =           xtimeN(sub_byte_share_A, (dec ? 11  : 3));
-wire [ 7:0] mix_b2_shareA = decrypt ? xtimeN(sub_byte_share_A, (      13     )) : sub_byte_share_A;
-wire [ 7:0] mix_b1_shareA = decrypt ? xtimeN(sub_byte_share_A, (       9     )) : sub_byte_share_A;
-wire [ 7:0] mix_b0_shareA =           xtimeN(sub_byte_share_A, (dec ? 14  : 2));
+wire [ 7:0] mix_b3_shareA =           xtimeN(sub_byte_share_A, (decrypt ? 11  : 3));
+wire [ 7:0] mix_b2_shareA = decrypt ? xtimeN(sub_byte_share_A, (          13     )) : sub_byte_share_A;
+wire [ 7:0] mix_b1_shareA = decrypt ? xtimeN(sub_byte_share_A, (           9     )) : sub_byte_share_A;
+wire [ 7:0] mix_b0_shareA =           xtimeN(sub_byte_share_A, (decrypt ? 14  : 2));
 
 wire [31:0] result_mix_shareA  = {mix_b3_shareA, mix_b2_shareA, mix_b1_shareA, mix_b0_shareA};
-wire [31:0] result_shareA      = mix ? result_mix_shareA : {24'b0, sub_byte_share_A};
+wire [31:0] result_shareA      = middle_round ? result_mix_shareA : {24'b0, sub_byte_share_A};
 
 wire [ 7:0] mix_b3_shareB =           xtimeN(sub_byte_share_B, (decrypt ? 11  : 3));
 wire [ 7:0] mix_b2_shareB = decrypt ? xtimeN(sub_byte_share_B, (          13     )) : sub_byte_share_B;
@@ -97,12 +101,12 @@ assign key_addition_shareA = rotated_shareA ^ rs1;
 
 assign rd = key_addition_shareA ^ rotated_shareB;
 
-riscv_crypto_aes_dom_sbox i_aes_dom_sbox(
+cv32e40x_dom_sbox i_aes_dom_sbox(
     .clk(clk),
     .reset_n(reset_n),
 
-    .shareA_in(sel_byte_share_A),
-    .shareB_in(sel_byte_share_A),
+    .shareA_in(byte_sel_share_A),
+    .shareB_in(byte_sel_share_B),
 
     .decrypt(decrypt),
 

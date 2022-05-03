@@ -29,7 +29,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     logic save_commit;
 
     logic [1:0]              byte_select_i;
-    logic [X_RFR_WIDTH-1:0]  rs1_i, rs2_i, rs3, result_aes_o, rd;
+    logic [X_RFR_WIDTH-1:0]  rs1_i, rs2_i, rs3_i, result_aes_o, rd;
     logic [X_ID_WIDTH-1:0]   instruction_id;
     logic [31:0]             instruction;
     logic [4:0]              rd_register_adr;
@@ -196,25 +196,25 @@ generate if(PROTECTED) begin
     );
 
 end else begin
-    riscv_crypto_fu_saes32 
-    #(
-        .SAES_DEC_EN ( 1 )                 // Enable saes32 decrypt instructions.
-    )
-    aes_i
-    (
-        .valid           (valid_aes_input)  , // Are the inputs valid?
-        .rs1             (rs1_i)            , //[31:0] //! (modified) Key   
-        .rs2             (rs2_i)            , //[31:0]//! Cipher 
-        .bs              (byte_select_i)    , //[1:0]// Byte select immediate
+    // riscv_crypto_fu_saes32 
+    // #(
+    //     .SAES_DEC_EN ( 1 )                 // Enable saes32 decrypt instructions.
+    // )
+    // aes_i
+    // (
+    //     .valid           (valid_aes_input)  , // Are the inputs valid?
+    //     .rs1             (rs1_i)            , //[31:0] //! (modified) Key   
+    //     .rs2             (rs2_i)            , //[31:0]//! Cipher 
+    //     .bs              (byte_select_i)    , //[1:0]// Byte select immediate
 
-        .op_saes32_encs  (encrypt_i)        , // Encrypt SubBytes
-        .op_saes32_encsm (encrypt_middle_i) , // Encrypt SubBytes + MixColumn
-        .op_saes32_decs  (decrypt_i)        , // Decrypt SubBytes
-        .op_saes32_decsm (decrypt_middle_i) , // Decrypt SubBytes + MixColumn
+    //     .op_saes32_encs  (encrypt_i)        , // Encrypt SubBytes
+    //     .op_saes32_encsm (encrypt_middle_i) , // Encrypt SubBytes + MixColumn
+    //     .op_saes32_decs  (decrypt_i)        , // Decrypt SubBytes
+    //     .op_saes32_decsm (decrypt_middle_i) , // Decrypt SubBytes + MixColumn
 
-        .rd              (result_aes_o)     , //[31:0]// output destination register value.
-        .ready           (ready_aes_output)   // Compute finished?
-    );
+    //     .rd              (result_aes_o)     , //[31:0]// output destination register value.
+    //     .ready           (ready_aes_output)   // Compute finished?
+    // );
 end endgenerate
 
 
