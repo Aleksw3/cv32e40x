@@ -6,7 +6,8 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
   parameter int          X_RFR_WIDTH     =  32, // Register file read access width for the eXtension interface
   parameter int          X_RFW_WIDTH     =  32, // Register file write access width for the eXtension interface
   parameter logic [31:0] X_MISA          =  '0, // MISA extensions implemented on the eXtension interface
-  parameter logic [ 1:0] X_ECS_XS        =  '0  // Default value for mstatus.XS
+  parameter logic [ 1:0] X_ECS_XS        =  '0, // Default value for mstatus.XS
+  parameter logic        PROTECTED       =  '1
 )
 (
   input  logic          clk,
@@ -50,8 +51,8 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     assign xif_result.result.we    = 1;
 
 
-    assign valid_aes_input         = is_instruction_accepted;
-    assign byte_select_i   = instruction[31:30];
+    assign valid_aes_input = is_instruction_accepted;
+    assign byte_select_i   = instruction[26:25];
     assign rd_register_adr = instruction[11:7];
 
     assign issue_ready_aes = !valid_aes_result || (valid_aes_result && xif_result.result_ready);
@@ -115,6 +116,10 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
                 if(xif_issue.issue_req.rs_valid ==? 3'bx1x) begin
                     rs2_i = xif_issue.issue_req.rs[1];
                 end 
+
+                if(xif_issue.issue_req.rs_valid ==? 3'b1xx) begin
+                    rs3_i = xif_issue.issue_req.rs[2];
+                end 
             end
         end
     end
@@ -148,7 +153,32 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     end
 
 
+generate if(PROTECTED) begin
+    riscv_crypto_fu_saes32_protected
+    #(
 
+    )
+    aes_i
+    (
+    .clk(clk),
+    .reset_n(reset_n),
+    .valid(valid_aes_input),
+
+    .rs1(rs1_i),
+    .rs2(rs2_i),
+    .rs3(rs3_i),
+    .bs(byte_select_i),
+
+    .op_saes32_decs(decrypt_i),
+    .op_saes32_decsm(decrypt_middle_i),
+    .op_saes32_encs(encrypt_i),
+    .op_saes32_encsm(encrypt_middle_i),
+
+    .rd(result_aes_o),
+    .ready(ready_aes_output)
+    );
+
+end else begin
     riscv_crypto_fu_saes32 
     #(
         .SAES_DEC_EN ( 1 )                 // Enable saes32 decrypt instructions.
@@ -168,8 +198,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         .rd              (result_aes_o)     , //[31:0]// output destination register value.
         .ready           (ready_aes_output)   // Compute finished?
     );
-
-
+end endgenerate
 
 
 
