@@ -29,7 +29,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     logic save_commit;
 
     logic [1:0]              byte_select_i;
-    logic [X_RFR_WIDTH-1:0]  rs1_i, rs2_i, result_aes_o, rd;
+    logic [X_RFR_WIDTH-1:0]  rs1_i, rs2_i, rs3, result_aes_o, rd;
     logic [X_ID_WIDTH-1:0]   instruction_id;
     logic [31:0]             instruction;
     logic [4:0]              rd_register_adr;
@@ -101,6 +101,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         begin
             rs1_i            = '0;
             rs2_i            = '0;
+            rs3_i            = '0;
             instruction_id   = '0;
             instruction      =  0;
             is_instruction_accepted = 0;
@@ -169,12 +170,6 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
                 save_commit = commit_instruction;
         end
     end
-
-    
-
-generate if(PROTECTED) begin
-    riscv_crypto_fu_saes32_protected
-    #(
 
 generate if(PROTECTED) begin
     riscv_crypto_fu_saes32_protected
