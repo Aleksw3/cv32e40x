@@ -4,10 +4,11 @@ module riscv_crypto_fu_saes32_protected #(
     input  wire         clk,
     input  wire         reset_n,
     input  wire         valid,
+    input  wire         ready_input,
 
     input  wire [31:0]  rs1,
     input  wire [31:0]  rs2,
-    input  wire [31:0]  rs3,
+    input  wire [35:0]  randombits,
     input  wire [1:0]   bs,
 
     input  wire         op_saes32_decs,
@@ -16,7 +17,7 @@ module riscv_crypto_fu_saes32_protected #(
     input  wire         op_saes32_encsm,
 
     output wire [31:0] rd,
-    output wire        ready
+    output wire        rd_ready_o
 );
 wire [7:0] sub_byte_share_A, sub_byte_share_B;
 
@@ -24,22 +25,18 @@ wire [7:0] sub_byte_share_A, sub_byte_share_B;
 assign decrypt      = op_saes32_decs  || op_saes32_decsm;
 assign middle_round = op_saes32_decsm || op_saes32_encsm;
 
-wire [7:0] bytes_in_share_A [3:0];
-assign bytes_in_share_A[0] = rs2[ 7: 0];
-assign bytes_in_share_A[1] = rs2[15: 8];
-assign bytes_in_share_A[2] = rs2[23:16];
-assign bytes_in_share_A[3] = rs2[31:24];
+wire [7:0] bytes_in_share_A [1:0];
+assign bytes_in_share_A[1] = rs2[31:24];
+assign bytes_in_share_A[0] = rs2[23:16];
 
-wire [7:0] bytes_in_share_B [3:0];
-assign bytes_in_share_B[0] = rs3[ 7: 0];
+wire [7:0] bytes_in_share_B [1:0];
 assign bytes_in_share_B[1] = rs3[15: 8];
-assign bytes_in_share_B[2] = rs3[23:16];
-assign bytes_in_share_B[3] = rs3[31:24];
+assign bytes_in_share_B[0] = rs3[ 7: 0];
 
 logic [7:0] byte_sel_share_A;
 logic [7:0] byte_sel_share_B;
-assign byte_sel_share_A = bytes_in_share_A[bs];
-assign byte_sel_share_B = bytes_in_share_B[bs];
+assign byte_sel_share_A = valid ? bytes_in_share_A[bs[0]] : '0;
+assign byte_sel_share_B = valid ? bytes_in_share_B[bs[0]] : '0;
 
 // Mix Column GF(256) scalar multiplication functions
 function [7:0] xtime2;

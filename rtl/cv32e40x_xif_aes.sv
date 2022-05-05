@@ -33,6 +33,8 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     logic [X_ID_WIDTH-1:0]   instruction_id;
     logic [31:0]             instruction;
     logic [4:0]              rd_register_adr;
+    logic [35:0] randombits;
+
 
 
 
@@ -202,10 +204,12 @@ end else begin
     )
     aes_i
     (
-        .valid           (valid_aes_input)  , // Are the inputs valid?
-        .rs1             (rs1_i)            , //[31:0] //! (modified) Key   
-        .rs2             (rs2_i)            , //[31:0]//! Cipher 
-        .bs              (byte_select_i)    , //[1:0]// Byte select immediate
+        .valid           (valid_aes_input)  ,
+        .rs1             (rs1_i)            , 
+        .rs2             (rs2_i)            , 
+        .randombits      (randombits)       , 
+
+        .bs              (byte_select_i)    ,
 
         .op_saes32_encs  (encrypt_i)        , // Encrypt SubBytes
         .op_saes32_encsm (encrypt_middle_i) , // Encrypt SubBytes + MixColumn
