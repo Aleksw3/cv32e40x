@@ -20,18 +20,22 @@ module riscv_crypto_fu_saes32_protected #(
     output wire        rd_ready_o
 );
 wire [7:0] sub_byte_share_A, sub_byte_share_B;
+logic [31:0] key_addition_shareA;
 
+//! TEMPORARY SOLUTION THAT WORKS FOR SIMULATION 
+//! DOES NOT WORK FOR PIPELINED DESIGN!!
+assign rd_ready_o = valid;
 
 assign decrypt      = op_saes32_decs  || op_saes32_decsm;
 assign middle_round = op_saes32_decsm || op_saes32_encsm;
 
 wire [7:0] bytes_in_share_A [1:0];
-assign bytes_in_share_A[1] = rs2[31:24];
-assign bytes_in_share_A[0] = rs2[23:16];
+assign bytes_in_share_A[0] = rs2[ 7: 0];
+assign bytes_in_share_A[1] = rs2[15: 8];
 
 wire [7:0] bytes_in_share_B [1:0];
-assign bytes_in_share_B[1] = rs3[15: 8];
-assign bytes_in_share_B[0] = rs3[ 7: 0];
+assign bytes_in_share_B[0] = rs2[23:16];
+assign bytes_in_share_B[1] = rs2[31:24];
 
 logic [7:0] byte_sel_share_A;
 logic [7:0] byte_sel_share_B;

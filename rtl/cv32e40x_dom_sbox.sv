@@ -13,7 +13,7 @@ module cv32e40x_dom_sbox #(
     output logic [7:0] shareB_out
 );
 
-function [7:0] isomorphic_mapping;
+function logic [7:0] isomorphic_mapping;
 input [7:0] byte_in;
 
 logic [7:0] im;
@@ -31,7 +31,7 @@ begin
 end
 endfunction
 
-function [7:0] inverse_isomorphic_mapping;
+function logic [7:0] inverse_isomorphic_mapping;
 input [7:0] byte_in;
 
 logic [7:0] im;
@@ -50,7 +50,7 @@ end
 
 endfunction
 
-function [7:0] affine_transformation_addition;
+function logic [7:0] affine_transformation_addition;
 input [7:0] byte_in;
 
 logic [7:0] im;
@@ -69,25 +69,25 @@ end
 
 endfunction
 
-function [7:0] affine_transformation_multiplication;
+function logic [7:0] affine_transformation_multiplication;
 input [7:0] byte_in;
 
 logic [7:0] im;
 begin
-    im[7] = byte_in[6] ^ byte_in[4] ^ byte_in[1];
-    im[6] = byte_in[5] ^ byte_in[3] ^ byte_in[0];
-    im[5] = byte_in[7] ^ byte_in[4] ^ byte_in[2];
-    im[4] = byte_in[6] ^ byte_in[3] ^ byte_in[1];
-    im[3] = byte_in[5] ^ byte_in[2] ^ byte_in[0];
-    im[2] = byte_in[7] ^ byte_in[4] ^ byte_in[1];
-    im[1] = byte_in[6] ^ byte_in[3] ^ byte_in[0];
-    im[0] = byte_in[7] ^ byte_in[5] ^ byte_in[2];
+    im[7] = byte_in[7] ^ byte_in[6] ^ byte_in[5] ^ byte_in[4] ^ byte_in[3];
+    im[6] = byte_in[6] ^ byte_in[5] ^ byte_in[4] ^ byte_in[3] ^ byte_in[2];
+    im[5] = byte_in[5] ^ byte_in[4] ^ byte_in[3] ^ byte_in[2] ^ byte_in[1];
+    im[4] = byte_in[4] ^ byte_in[3] ^ byte_in[2] ^ byte_in[1] ^ byte_in[0];
+    im[3] = byte_in[7] ^ byte_in[3] ^ byte_in[2] ^ byte_in[1] ^ byte_in[0];
+    im[2] = byte_in[7] ^ byte_in[6] ^ byte_in[2] ^ byte_in[1] ^ byte_in[0];
+    im[1] = byte_in[7] ^ byte_in[6] ^ byte_in[5] ^ byte_in[1] ^ byte_in[0];
+    im[0] = byte_in[7] ^ byte_in[6] ^ byte_in[5] ^ byte_in[4] ^ byte_in[0];
 
     affine_transformation_multiplication = im;
 end
 endfunction
 
-function [7:0] inverse_affine_transformation_addition;
+function logic [7:0] inverse_affine_transformation_addition;
 input  [7:0] byte_in;
 
 logic [7:0] im;
@@ -105,7 +105,7 @@ begin
 end
 endfunction
 
-function [7:0] inverse_affine_transformation_multiplication;
+function logic [7:0] inverse_affine_transformation_multiplication;
     input [7:0] byte_in;
 
     logic [7:0] im;
@@ -123,16 +123,16 @@ function [7:0] inverse_affine_transformation_multiplication;
     end
 endfunction
 
-function [3:0] square_scale_gf16;
+function logic [3:0] square_scale_gf16;
     input [3:0] nibble_in;
-    logic [3:0] sum_bits;       
-    logic [3:0] square_sum;     
-    logic [3:0] scale_h;        
-    logic [3:0] square_scale_h;
+    logic [1:0] sum_bits;       
+    logic [1:0] square_sum;     
+    logic [1:0] scale_h;        
+    logic [1:0] square_scale_h;
     begin
         sum_bits       = nibble_in[3:2] ^ nibble_in[1:0];
         square_sum     = square_gf4(sum_bits);
-        scale_h        = scale_N_gf4(nibble_in[3:2]);
+        scale_h        = scale_N_gf4(nibble_in[1:0]);
         square_scale_h = square_gf4(scale_h);
 
         square_scale_gf16 = {square_sum, square_scale_h};
@@ -140,11 +140,11 @@ function [3:0] square_scale_gf16;
 endfunction;
 
 //! Probably need a register here
-function [1:0][3:0] dom_multiplication_gf16;
-    input [3:0] shareA_h_in;
-    input [3:0] shareA_l_in;
-    input [3:0] shareB_h_in;
-    input [3:0] shareB_l_in;
+function logic [1:0][3:0] dom_multiplication_gf16;
+    input [3:0] shareA_gf16_h_in;
+    input [3:0] shareA_gf16_l_in;
+    input [3:0] shareB_gf16_h_in;
+    input [3:0] shareB_gf16_l_in;
     logic [3:0] AA_hl_mult; 
     logic [3:0] AB_hl_mult; 
     logic [3:0] BB_hl_mult; 
@@ -156,10 +156,10 @@ function [1:0][3:0] dom_multiplication_gf16;
 
     begin 
         
-        AA_hl_mult = multiplication_gf16(shareA_h_in, shareA_l_in);
-        AB_hl_mult = multiplication_gf16(shareA_h_in, shareB_l_in);
-        BB_hl_mult = multiplication_gf16(shareB_h_in, shareB_l_in);
-        BA_hl_mult = multiplication_gf16(shareB_h_in, shareA_l_in);
+        AA_hl_mult = multiplication_gf16_1(shareA_gf16_h_in, shareA_gf16_l_in);
+        AB_hl_mult = multiplication_gf16_2(shareA_gf16_h_in, shareB_gf16_l_in);
+        BB_hl_mult = multiplication_gf16_3(shareB_gf16_h_in, shareB_gf16_l_in);
+        BA_hl_mult = multiplication_gf16_4(shareB_gf16_h_in, shareA_gf16_l_in);
 
         //TODO Implement randomness here
         `define random_value 4'ha
@@ -175,7 +175,36 @@ function [1:0][3:0] dom_multiplication_gf16;
     end
 endfunction;
 
-function [3:0] multiplication_gf16;
+function logic [3:0] multiplication_gf16_1;
+    input [3:0] a_in;
+    input [3:0] b_in;
+
+    logic [1:0] a_sum;
+    logic [1:0] b_sum;
+    logic [1:0] a_high_b_high_mult; 
+    logic [1:0] a_low_b_low_mult;   
+    logic [1:0] ab_sum_mult;        
+    logic [1:0] ab_sum_scale_N; 
+    logic [1:0] result_h; 
+    logic [1:0] result_l; 
+    begin
+        a_sum = a_in[3:2] ^ a_in[1:0];
+        b_sum = b_in[3:2] ^ b_in[1:0];
+
+        a_high_b_high_mult = multiplication_gf4_1(a_in[3:2], b_in[3:2]);
+        a_low_b_low_mult   = multiplication_gf4_2(a_in[1:0], b_in[1:0]);
+        ab_sum_mult        = multiplication_gf4_3(a_sum, b_sum);
+
+        ab_sum_scale_N = scale_N_gf4(ab_sum_mult);
+
+        result_h = ab_sum_scale_N ^ a_high_b_high_mult;
+        result_l = ab_sum_scale_N ^ a_low_b_low_mult;
+
+        multiplication_gf16_1 = {result_h, result_l};
+    end
+endfunction
+
+function logic [3:0] multiplication_gf16_2;
     input [3:0] a_in;
     input [3:0] b_in;
 
@@ -200,11 +229,69 @@ function [3:0] multiplication_gf16;
         result_h = ab_sum_scale_N ^ a_high_b_high_mult;
         result_l = ab_sum_scale_N ^ a_low_b_low_mult;
 
-        multiplication_gf16 = {result_h, result_l};
+        multiplication_gf16_2 = {result_h, result_l};
     end
 endfunction
 
-function [1:0][3:0] inversion_gf16;
+function logic [3:0] multiplication_gf16_3;
+    input [3:0] a_in;
+    input [3:0] b_in;
+
+    logic [1:0] a_sum;
+    logic [1:0] b_sum;
+    logic [1:0] a_high_b_high_mult; 
+    logic [1:0] a_low_b_low_mult;   
+    logic [1:0] ab_sum_mult;        
+    logic [1:0] ab_sum_scale_N; 
+    logic [1:0] result_h; 
+    logic [1:0] result_l; 
+    begin
+        a_sum = a_in[3:2] ^ a_in[1:0];
+        b_sum = b_in[3:2] ^ b_in[1:0];
+
+        a_high_b_high_mult = multiplication_gf4(a_in[3:2], b_in[3:2]);
+        a_low_b_low_mult   = multiplication_gf4(a_in[1:0], b_in[1:0]);
+        ab_sum_mult        = multiplication_gf4(a_sum, b_sum);
+
+        ab_sum_scale_N = scale_N_gf4(ab_sum_mult);
+
+        result_h = ab_sum_scale_N ^ a_high_b_high_mult;
+        result_l = ab_sum_scale_N ^ a_low_b_low_mult;
+
+        multiplication_gf16_3 = {result_h, result_l};
+    end
+endfunction
+
+function logic [3:0] multiplication_gf16_4;
+    input [3:0] a_in;
+    input [3:0] b_in;
+
+    logic [1:0] a_sum;
+    logic [1:0] b_sum;
+    logic [1:0] a_high_b_high_mult; 
+    logic [1:0] a_low_b_low_mult;   
+    logic [1:0] ab_sum_mult;        
+    logic [1:0] ab_sum_scale_N; 
+    logic [1:0] result_h; 
+    logic [1:0] result_l; 
+    begin
+        a_sum = a_in[3:2] ^ a_in[1:0];
+        b_sum = b_in[3:2] ^ b_in[1:0];
+
+        a_high_b_high_mult = multiplication_gf4(a_in[3:2], b_in[3:2]);
+        a_low_b_low_mult   = multiplication_gf4(a_in[1:0], b_in[1:0]);
+        ab_sum_mult        = multiplication_gf4(a_sum, b_sum);
+
+        ab_sum_scale_N = scale_N_gf4(ab_sum_mult);
+
+        result_h = ab_sum_scale_N ^ a_high_b_high_mult;
+        result_l = ab_sum_scale_N ^ a_low_b_low_mult;
+
+        multiplication_gf16_4 = {result_h, result_l};
+    end
+endfunction
+
+function logic [1:0][3:0] inversion_gf16;
     input [3:0] shareA_in;
     input [3:0] shareB_in;
     
@@ -251,24 +338,23 @@ function [1:0][3:0] inversion_gf16;
     end
 endfunction;
 
-function [1:0] square_gf4;
+function logic [1:0] square_gf4;
     input [1:0] bits_in;
     square_gf4 = {bits_in[0], bits_in[1]};
 endfunction
 
-function [1:0] inverse_gf4;
+function logic [1:0] inverse_gf4;
     input [1:0] bits_in;
     inverse_gf4 = {bits_in[0], bits_in[1]};
 endfunction
 
-function [1:0] scale_N_gf4;
+function logic [1:0] scale_N_gf4;
     input [1:0] bits_in;
     scale_N_gf4 = {bits_in[0], bits_in[1] ^ bits_in[0]};
 endfunction
 
 //! Probably need a register here
-//TODO check the order of the array parathesis
-function [1:0][1:0] dom_multiplication_gf4;
+function logic [1:0][1:0] dom_multiplication_gf4;
     input [1:0] shareA_h_in;
     input [1:0] shareA_l_in;
     input [1:0] shareB_h_in;
@@ -300,30 +386,107 @@ function [1:0][1:0] dom_multiplication_gf4;
     end
 endfunction
 
-function [1:0] multiplication_gf4;
+function logic [1:0] multiplication_gf4;
     input [1:0] a_in;
     input [1:0] b_in;
-    logic [1:0] a_sum_bits;
-    logic [1:0] b_sum_bits;
-    logic [1:0] msb_ab_mult;
-    logic [1:0] lsb_ab_mult;
-    logic [1:0] a_sum_b_sum_mult;
-    logic [1:0] result_h;
-    logic [1:0] result_l;
+    logic a_sum_bits;
+    logic b_sum_bits;
+    logic msb_ab_mult;
+    logic lsb_ab_mult;
+    logic a_sum_b_sum_mult;
+    logic result_h;
+    logic result_l;
     begin
-        a_sum_bits = a_in[1] ^ a_in[0];
-        b_sum_bits = b_in[1] ^ b_in[0];
+        a_sum_bits = a_in[1] ^ a_in[0]; 
+        b_sum_bits = b_in[1] ^ b_in[0]; 
 
-        msb_ab_mult = a_in[1] & b_in[1];
-        lsb_ab_mult = a_in[0] & b_in[0];
-        a_sum_b_sum_mult = a_sum_bits & b_sum_bits;
+        msb_ab_mult = a_in[1] & b_in[1]; 
+        lsb_ab_mult = a_in[0] & b_in[0]; 
+        a_sum_b_sum_mult = a_sum_bits & b_sum_bits; 
 
-        result_h = msb_ab_mult ^ a_sum_b_sum_mult;
-        result_l = lsb_ab_mult ^ a_sum_b_sum_mult;
+        result_h = msb_ab_mult ^ a_sum_b_sum_mult; 
+        result_l = lsb_ab_mult ^ a_sum_b_sum_mult; 
 
         multiplication_gf4 = {result_h, result_l};
     end
 endfunction
+
+function logic [1:0] multiplication_gf4_1;
+    input [1:0] a_in;
+    input [1:0] b_in;
+    logic a_sum_bits;
+    logic b_sum_bits;
+    logic msb_ab_mult;
+    logic lsb_ab_mult;
+    logic a_sum_b_sum_mult;
+    logic result_h;
+    logic result_l;
+    begin
+        a_sum_bits = a_in[1] ^ a_in[0]; 
+        b_sum_bits = b_in[1] ^ b_in[0]; 
+
+        msb_ab_mult = a_in[1] & b_in[1]; 
+        lsb_ab_mult = a_in[0] & b_in[0]; 
+        a_sum_b_sum_mult = a_sum_bits & b_sum_bits; 
+
+        result_h = msb_ab_mult ^ a_sum_b_sum_mult; 
+        result_l = lsb_ab_mult ^ a_sum_b_sum_mult; 
+
+        multiplication_gf4_1 = {result_h, result_l};
+    end
+endfunction
+
+function logic [1:0] multiplication_gf4_2;
+    input [1:0] a_in;
+    input [1:0] b_in;
+    logic a_sum_bits;
+    logic b_sum_bits;
+    logic msb_ab_mult;
+    logic lsb_ab_mult;
+    logic a_sum_b_sum_mult;
+    logic result_h;
+    logic result_l;
+    begin
+        a_sum_bits = a_in[1] ^ a_in[0]; 
+        b_sum_bits = b_in[1] ^ b_in[0]; 
+
+        msb_ab_mult = a_in[1] & b_in[1]; 
+        lsb_ab_mult = a_in[0] & b_in[0]; 
+        a_sum_b_sum_mult = a_sum_bits & b_sum_bits; 
+
+        result_h = msb_ab_mult ^ a_sum_b_sum_mult; 
+        result_l = lsb_ab_mult ^ a_sum_b_sum_mult; 
+
+        multiplication_gf4_2 = {result_h, result_l};
+    end
+endfunction
+
+function logic [1:0] multiplication_gf4_3;
+    input [1:0] a_in;
+    input [1:0] b_in;
+    logic a_sum_bits;
+    logic b_sum_bits;
+    logic msb_ab_mult;
+    logic lsb_ab_mult;
+    logic a_sum_b_sum_mult;
+    logic result_h;
+    logic result_l;
+    begin
+        a_sum_bits = a_in[1] ^ a_in[0]; 
+        b_sum_bits = b_in[1] ^ b_in[0]; 
+
+        msb_ab_mult = a_in[1] & b_in[1]; 
+        lsb_ab_mult = a_in[0] & b_in[0]; 
+        a_sum_b_sum_mult = a_sum_bits & b_sum_bits; 
+
+        result_h = msb_ab_mult ^ a_sum_b_sum_mult; 
+        result_l = lsb_ab_mult ^ a_sum_b_sum_mult; 
+
+        multiplication_gf4_3 = {result_h, result_l};
+    end
+endfunction
+
+
 
 
 
@@ -349,16 +512,17 @@ logic [3:0] shareA_sum_nibbles;
 logic [3:0] shareB_sum_nibbles; 
 logic [3:0] shareA_square_scale; 
 logic [3:0] shareB_square_scale; 
-logic [7:0] multiplication; 
+logic [1:0][3:0] multiplication; 
 logic [3:0] shareA_multiply;
 logic [3:0] shareB_multiply;
 logic [3:0] shareA_sum_multiply;
 logic [3:0] shareB_sum_multiply;
-logic [3:0] inverted;
+logic [1:0][3:0] inverted;
 logic [3:0] shareA_inverted;
 logic [3:0] shareB_inverted;
 logic [1:0][3:0] multiplication_high;
 logic [1:0][3:0] multiplication_low;
+logic [3:0] sharea_h, sharea_l, shareb_h, shareb_l;
 
 always_comb 
 begin: GF256_inversion
@@ -368,45 +532,55 @@ begin: GF256_inversion
     shareA_square_scale = square_scale_gf16(shareA_sum_nibbles);
     shareB_square_scale = square_scale_gf16(shareB_sum_nibbles);
 
-    multiplication = dom_multiplication_gf16(shareA_isomorphic_trans[7:4], 
-                                                shareA_isomorphic_trans[3:0],
-                                                shareB_isomorphic_trans[7:4], 
-                                                shareB_isomorphic_trans[3:0]);
-    shareA_multiply = multiplication[7:4];
-    shareB_multiply = multiplication[3:0];
+    sharea_h = shareA_isomorphic_trans[7:4];
+    sharea_l = shareA_isomorphic_trans[3:0];
+    shareb_h = shareB_isomorphic_trans[7:4];
+    shareb_l = shareB_isomorphic_trans[3:0];
 
-    shareA_sum_multiply = shareA_multiply ^ shareA_sum_nibbles;
-    shareB_sum_multiply = shareB_multiply ^ shareB_sum_nibbles;
+    multiplication = dom_multiplication_gf16(sharea_h, 
+                                             sharea_l,
+                                             shareb_h, 
+                                             shareb_l);
+
+    shareA_multiply = multiplication[0];
+    shareB_multiply = multiplication[1];
+
+    shareA_sum_multiply = shareA_multiply ^ shareA_square_scale;
+    shareB_sum_multiply = shareB_multiply ^ shareB_square_scale;
 
     inverted = inversion_gf16(shareA_sum_multiply, shareB_sum_multiply);
     shareA_inverted = inverted[0];
     shareB_inverted = inverted[1];
 
-    multiplication_high = dom_multiplication_gf16(shareA_isomorphic_trans[7:4], 
-                                                    shareA_inverted, 
-                                                    shareB_isomorphic_trans[7:4], 
-                                                    shareB_inverted);
-    multiplication_low  = dom_multiplication_gf16(shareA_isomorphic_trans[3:0], 
+    multiplication_high = dom_multiplication_gf16(shareA_isomorphic_trans[3:0], 
                                                     shareA_inverted, 
                                                     shareB_isomorphic_trans[3:0], 
+                                                    shareB_inverted);
+    multiplication_low  = dom_multiplication_gf16(shareA_isomorphic_trans[7:4], 
+                                                    shareA_inverted, 
+                                                    shareB_isomorphic_trans[7:4], 
                                                     shareB_inverted);
     
     shareA_result = {multiplication_high[0], multiplication_low[0]};
     shareB_result = {multiplication_high[1], multiplication_low[1]};
 end
+logic [7:0] a1, a2;
+logic [7:0] b1;
 
 always_comb begin
-    if(decrypt) begin
-        shareA_out = inverse_isomorphic_mapping(shareA_result);
-        shareB_out = inverse_isomorphic_mapping(shareB_result);
-    end else begin
-        shareA_out = inverse_isomorphic_mapping(
-                            affine_transformation_addition(
-                                affine_transformation_multiplication(shareA_result)));
+    // if(decrypt == 'b1) begin
+    //     shareA_out = inverse_isomorphic_mapping(shareA_result);
+    //     shareB_out = inverse_isomorphic_mapping(shareB_result);
+    // end else begin
+        a1 = inverse_isomorphic_mapping(shareA_result);
+        a2 = affine_transformation_multiplication(a1);
+        shareA_out = affine_transformation_addition(a2);
+                            
+                                
+        b1 = inverse_isomorphic_mapping(shareB_result);
+        shareB_out = affine_transformation_multiplication(b1);
+    // end
 
-        shareB_out = inverse_isomorphic_mapping(
-                        affine_transformation_multiplication(shareB_result));
-    end
 end
 
 endmodule

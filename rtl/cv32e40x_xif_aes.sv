@@ -28,8 +28,10 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     logic is_commit_kill, is_commit_accept, kill_instruction, commit_instruction;
     logic save_commit;
 
+    logic ready_input;
+
     logic [1:0]              byte_select_i;
-    logic [X_RFR_WIDTH-1:0]  rs1_i, rs2_i, rs3_i, result_aes_o, rd;
+    logic [X_RFR_WIDTH-1:0]  rs1_i, rs2_i, result_aes_o, rd;
     logic [X_ID_WIDTH-1:0]   instruction_id;
     logic [31:0]             instruction;
     logic [4:0]              rd_register_adr;
@@ -60,7 +62,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
 
 
     assign valid_aes_input = is_instruction_accepted;
-    assign byte_select_i   = instruction[26:25];
+    assign byte_select_i   = instruction[31:30];
     assign rd_register_adr = instruction[11:7];
 
     // Accept instruction
@@ -103,7 +105,6 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         begin
             rs1_i            = '0;
             rs2_i            = '0;
-            rs3_i            = '0;
             instruction_id   = '0;
             instruction      =  0;
             is_instruction_accepted = 0;
@@ -124,10 +125,6 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
 
                 if(xif_issue.issue_req.rs_valid ==? 3'bx1x) begin
                     rs2_i = xif_issue.issue_req.rs[1];
-                end 
-
-                if(xif_issue.issue_req.rs_valid ==? 3'b1xx) begin
-                    rs3_i = xif_issue.issue_req.rs[2];
                 end 
             end
         end
@@ -173,53 +170,55 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         end
     end
 
-generate if(PROTECTED) begin
+// generate if(PROTECTED) begin
     riscv_crypto_fu_saes32_protected
     #(
     )
     aes_i
     (
-    .clk(clk),
-    .reset_n(reset_n),
-    .valid(valid_aes_input),
+        .clk(clk),
+        .reset_n(reset_n),
 
-    .rs1(rs1_i),
-    .rs2(rs2_i),
-    .rs3(rs3_i),
-    .bs(byte_select_i),
-
-    .op_saes32_decs(decrypt_i),
-    .op_saes32_decsm(decrypt_middle_i),
-    .op_saes32_encs(encrypt_i),
-    .op_saes32_encsm(encrypt_middle_i),
-
-    .rd(result_aes_o),
-    .ready(ready_aes_output)
-    );
-
-end else begin
-    riscv_crypto_fu_saes32 
-    #(
-        .SAES_DEC_EN ( 1 )                 // Enable saes32 decrypt instructions.
-    )
-    aes_i
-    (
         .valid           (valid_aes_input)  ,
+        .ready_input     (ready_input)      ,
         .rs1             (rs1_i)            , 
         .rs2             (rs2_i)            , 
         .randombits      (randombits)       , 
 
-        .bs              (byte_select_i)    ,
+        .bs(byte_select_i)                  ,
 
-        .op_saes32_encs  (encrypt_i)        , // Encrypt SubBytes
-        .op_saes32_encsm (encrypt_middle_i) , // Encrypt SubBytes + MixColumn
-        .op_saes32_decs  (decrypt_i)        , // Decrypt SubBytes
-        .op_saes32_decsm (decrypt_middle_i) , // Decrypt SubBytes + MixColumn
+        .op_saes32_decs(decrypt_i)          ,
+        .op_saes32_decsm(decrypt_middle_i)  ,
+        .op_saes32_encs(encrypt_i)          ,
+        .op_saes32_encsm(encrypt_middle_i)  ,
 
-        .rd              (result_aes_o)     , //[31:0]// output destination register value.
-        .ready           (ready_aes_output)   // Compute finished?
+        .rd(result_aes_o),
+        .rd_ready_o(ready_aes_output)
     );
-end endgenerate
+
+// end else begin
+//     riscv_crypto_fu_saes32 
+//     #(
+//         .SAES_DEC_EN ( 1 )                 // Enable saes32 decrypt instructions.
+//     )
+//     aes_i
+//     (
+//         .valid           (valid_aes_input)  ,
+//         .rs1             (rs1_i)            , 
+//         .rs2             (rs2_i)            , 
+//         .randombits      (randombits)       , 
+
+//         .bs              (byte_select_i)    ,
+
+//         .op_saes32_encs  (encrypt_i)        , // Encrypt SubBytes
+//         .op_saes32_encsm (encrypt_middle_i) , // Encrypt SubBytes + MixColumn
+//         .op_saes32_decs  (decrypt_i)        , // Decrypt SubBytes
+//         .op_saes32_decsm (decrypt_middle_i) , // Decrypt SubBytes + MixColumn
+
+//         .rd              (result_aes_o)     , //[31:0]// output destination register value.
+//         .ready           (ready_aes_output)   // Compute finished?
+//     );
+// end endgenerate
 
 
 
