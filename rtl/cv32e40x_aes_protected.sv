@@ -8,8 +8,9 @@ module riscv_crypto_fu_saes32_protected #(
 
     input  wire [31:0]  rs1,
     input  wire [31:0]  rs2,
+    input  wire [7: 0]  shareB_in, // 8-bits of random fetched from an RNG generator
     input  wire [35:0]  randombits,
-    input  wire [1:0]   bs,
+    input  wire [1: 0]  bs,
 
     input  wire         op_saes32_decs,
     input  wire         op_saes32_decsm,
@@ -29,18 +30,20 @@ assign rd_ready_o = valid;
 assign decrypt      = op_saes32_decs  || op_saes32_decsm;
 assign middle_round = op_saes32_decsm || op_saes32_encsm;
 
-wire [7:0] bytes_in_share_A [1:0];
+wire [7:0] bytes_in_share_A [3:0];
 assign bytes_in_share_A[0] = rs2[ 7: 0];
 assign bytes_in_share_A[1] = rs2[15: 8];
-
-wire [7:0] bytes_in_share_B [1:0];
-assign bytes_in_share_B[0] = rs2[23:16];
-assign bytes_in_share_B[1] = rs2[31:24];
+assign bytes_in_share_A[2] = rs2[23:16];
+assign bytes_in_share_A[3] = rs2[31:24];
 
 logic [7:0] byte_sel_share_A;
-logic [7:0] byte_sel_share_B;
-assign byte_sel_share_A = valid ? bytes_in_share_A[bs[0]] : '0;
-assign byte_sel_share_B = valid ? bytes_in_share_B[bs[0]] : '0;
+assign byte_sel_share_A = bytes_in_share_A[bs];
+
+//TODO need to save values in registers
+logic [7:0] share_A_masked;
+assign share_A_masked = byte_sel_share_A ^ shareB_in;
+
+
 
 // Mix Column GF(256) scalar multiplication functions
 function [7:0] xtime2;
@@ -106,8 +109,8 @@ cv32e40x_dom_sbox i_aes_dom_sbox(
     .clk(clk),
     .reset_n(reset_n),
 
-    .shareA_in(byte_sel_share_A),
-    .shareB_in(byte_sel_share_B),
+    .shareA_in(share_A_masked),
+    .shareB_in(shareB_in),
 
     .decrypt(decrypt),
 

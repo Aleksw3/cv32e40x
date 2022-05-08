@@ -7,7 +7,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
   parameter int          X_RFW_WIDTH     =  32, // Register file write access width for the eXtension interface
   parameter logic [31:0] X_MISA          =  '0, // MISA extensions implemented on the eXtension interface
   parameter logic [ 1:0] X_ECS_XS        =  '0, // Default value for mstatus.XS
-  parameter logic        PROTECTED       =  '1
+  parameter logic        PROTECTED       =   1
 )
 (
   input  logic          clk_i,
@@ -37,8 +37,8 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     logic [4:0]              rd_register_adr;
     logic [35:0] randombits;
 
-
-
+    logic [7:0] shareB_rand;
+    assign shareB_rand = 8'h02;
 
     // XIF issue interface response
     assign xif_issue.issue_resp.accept    = accept_instruction;
@@ -174,7 +174,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     riscv_crypto_fu_saes32_protected
     #(
     )
-    aes_i
+    aes_prot_i
     (
         .clk(clk),
         .reset_n(reset_n),
@@ -183,6 +183,7 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         .ready_input     (ready_input)      ,
         .rs1             (rs1_i)            , 
         .rs2             (rs2_i)            , 
+        .shareB_in       (shareB_rand)      ,
         .randombits      (randombits)       , 
 
         .bs(byte_select_i)                  ,
@@ -197,27 +198,25 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
     );
 
 // end else begin
-//     riscv_crypto_fu_saes32 
-//     #(
-//         .SAES_DEC_EN ( 1 )                 // Enable saes32 decrypt instructions.
-//     )
-//     aes_i
-//     (
-//         .valid           (valid_aes_input)  ,
-//         .rs1             (rs1_i)            , 
-//         .rs2             (rs2_i)            , 
-//         .randombits      (randombits)       , 
+    // riscv_crypto_fu_saes32 
+    // #(
+    //     .SAES_DEC_EN ( 1 )                 // Enable saes32 decrypt instructions.
+    // )
+    // aes_i
+    // (
+    //     .valid           (valid_aes_input)  ,
+    //     .rs1             (rs1_i)            , 
+    //     .rs2             (rs2_i)            , 
+    //     .bs              (byte_select_i)    ,
 
-//         .bs              (byte_select_i)    ,
+    //     .op_saes32_encs  (encrypt_i)        , // Encrypt SubBytes
+    //     .op_saes32_encsm (encrypt_middle_i) , // Encrypt SubBytes + MixColumn
+    //     .op_saes32_decs  (decrypt_i)        , // Decrypt SubBytes
+    //     .op_saes32_decsm (decrypt_middle_i) , // Decrypt SubBytes + MixColumn
 
-//         .op_saes32_encs  (encrypt_i)        , // Encrypt SubBytes
-//         .op_saes32_encsm (encrypt_middle_i) , // Encrypt SubBytes + MixColumn
-//         .op_saes32_decs  (decrypt_i)        , // Decrypt SubBytes
-//         .op_saes32_decsm (decrypt_middle_i) , // Decrypt SubBytes + MixColumn
-
-//         .rd              (result_aes_o)     , //[31:0]// output destination register value.
-//         .ready           (ready_aes_output)   // Compute finished?
-//     );
+    //     .rd              (result_aes_o)     , //[31:0]// output destination register value.
+    //     .ready           (ready_aes_output)   // Compute finished?
+    // );
 // end endgenerate
 
 

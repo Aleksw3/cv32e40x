@@ -74,7 +74,6 @@ wire [7:0] sbox_fwd_out     ;
 wire [7:0] sbox_inv_out     ;
 wire [7:0] sbox_out         = dec ? sbox_inv_out : sbox_fwd_out ;
 
-// Multiply by 2 in GF(2^8) modulo 8'h1b
 function [7:0] xtime2;
     input [7:0] a;
 
@@ -82,8 +81,6 @@ function [7:0] xtime2;
 
 endfunction
 
-//
-// Paired down multiply by X in GF(2^8)
 function [7:0] xtimeN;
     input[7:0] a;
     input[3:0] b;
