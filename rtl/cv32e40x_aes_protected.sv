@@ -31,10 +31,10 @@ assign decrypt      = op_saes32_decs  || op_saes32_decsm;
 assign middle_round = op_saes32_decsm || op_saes32_encsm;
 
 wire [7:0] bytes_in_share_A [3:0];
-assign bytes_in_share_A[0] = rs2[ 7: 0];
-assign bytes_in_share_A[1] = rs2[15: 8];
-assign bytes_in_share_A[2] = rs2[23:16];
-assign bytes_in_share_A[3] = rs2[31:24];
+assign bytes_in_share_A[3] = rs2[ 7: 0];
+assign bytes_in_share_A[2] = rs2[15: 8];
+assign bytes_in_share_A[1] = rs2[23:16];
+assign bytes_in_share_A[0] = rs2[31:24];
 
 logic [7:0] byte_sel_share_A;
 assign byte_sel_share_A = bytes_in_share_A[bs];
@@ -88,18 +88,23 @@ wire [31:0] result_mix_shareB  = {mix_b3_shareB, mix_b2_shareB, mix_b1_shareB, m
 wire [31:0] result_shareB      = middle_round ? result_mix_shareB : {24'b0, sub_byte_share_B};
 
 
-wire [31:0] rotated_shareA     =
+wire [31:0] rotated_shareA_tmp     =
     {32{bs == 2'b00}} & {result_shareA                             } |
     {32{bs == 2'b01}} & {result_shareA[23:0], result_shareA[31:24] } |
     {32{bs == 2'b10}} & {result_shareA[15:0], result_shareA[31:16] } |
     {32{bs == 2'b11}} & {result_shareA[ 7:0], result_shareA[31: 8] } ;
 
+wire [31:0] rotated_shareA = {rotated_shareA_tmp[7:0], rotated_shareA_tmp[15:8], rotated_shareA_tmp[16:23], rotated_shareA_tmp[31:24]};
 
-wire [31:0] rotated_shareB     =
+
+wire [31:0] rotated_shareB_tmp     =
     {32{bs == 2'b00}} & {result_shareB                             } |
     {32{bs == 2'b01}} & {result_shareB[23:0], result_shareB[31:24] } |
     {32{bs == 2'b10}} & {result_shareB[15:0], result_shareB[31:16] } |
     {32{bs == 2'b11}} & {result_shareB[ 7:0], result_shareB[31: 8] } ;
+    
+wire [31:0] rotated_shareA = {rotated_shareB_tmp[7:0], rotated_shareB_tmp[15:8], rotated_shareB_tmp[16:23], rotated_shareB_tmp[31:24]};
+
 
 assign key_addition_shareA = rotated_shareA ^ rs1;
 
