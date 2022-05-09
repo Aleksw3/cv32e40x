@@ -568,10 +568,10 @@ logic [7:0] a1, a2;
 logic [7:0] b1;
 
 always_comb begin
-    // if(decrypt == 'b1) begin
-    //     shareA_out = inverse_isomorphic_mapping(shareA_result);
-    //     shareB_out = inverse_isomorphic_mapping(shareB_result);
-    // end else begin
+    if(decrypt) begin
+        shareA_out = inverse_isomorphic_mapping(shareA_result);
+        shareB_out = inverse_isomorphic_mapping(shareB_result);
+    end else begin
         a1 = inverse_isomorphic_mapping(shareA_result);
         a2 = affine_transformation_multiplication(a1);
         shareA_out = affine_transformation_addition(a2);
@@ -579,7 +579,7 @@ always_comb begin
                                 
         b1 = inverse_isomorphic_mapping(shareB_result);
         shareB_out = affine_transformation_multiplication(b1);
-    // end
+    end
 
 end
 
