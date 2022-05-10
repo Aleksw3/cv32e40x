@@ -95,7 +95,7 @@ endfunction
 
 wire [ 7:0] mix_b3 =       xtimeN(sbox_out, (dec ? 11  : 3))            ;
 wire [ 7:0] mix_b2 = dec ? xtimeN(sbox_out, (      13     )) : sbox_out ;
-wire [ 7:0] mix_b1 = dec ? xtimeN(sbox_out, (       9    )) : sbox_out ;
+wire [ 7:0] mix_b1 = dec ? xtimeN(sbox_out, (       9     )) : sbox_out ;
 wire [ 7:0] mix_b0 =       xtimeN(sbox_out, (dec ? 14  : 2))            ;
 
 wire [31:0] result_mix  = {mix_b3, mix_b2, mix_b1, mix_b0};

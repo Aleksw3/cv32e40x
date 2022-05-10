@@ -587,11 +587,8 @@ module cv32e40x_wrapper
     // instantiate aes module
     cv32e40x_xif_aes
         #(
-            .X_NUM_RS   ( 2 ),  // Number of register file read ports that can be used by the eXtension interface            .X_ID_WIDTH ( 4)  // Width of ID field.
-            .X_MEM_WIDTH( 32 ), // Memory access width for loads/stores via the eXtension interface
+            .X_ID_WIDTH ( 4),  // Width of ID field.
             .X_RFR_WIDTH( 32 ), // Register file read access width for the eXtension interface
-            .X_RFW_WIDTH( 32 ), // Register file write access width for the eXtension interface
-            .X_MISA     ( '0 ), // MISA extensions implemented on the eXtension interface
             .X_ECS_XS   ( '0 )) 
     aes_xif_i (
             .clk_i(clk_i),

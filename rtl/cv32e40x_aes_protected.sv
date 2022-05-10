@@ -1,6 +1,4 @@
-module riscv_crypto_fu_saes32_protected #(
-    parameter SAES_DEC_EN = 1
-)(
+module riscv_crypto_fu_saes32_protected (
     input  wire         clk,
     input  wire         reset_n,
     input  wire         valid,
@@ -9,7 +7,7 @@ module riscv_crypto_fu_saes32_protected #(
     input  wire [31:0]  rs1,
     input  wire [31:0]  rs2,
     input  wire [7: 0]  shareB_in, // 8-bits of random fetched from an RNG generator
-    input  wire [35:0]  randombits,
+    input  wire [35:0]  randombits, // Randomnbits required by the masked SBox implementation to remask certain operations
     input  wire [1: 0]  bs,
 
     input  wire         op_saes32_decs,
@@ -21,7 +19,7 @@ module riscv_crypto_fu_saes32_protected #(
     output wire        rd_ready_o
 );
 wire [7:0] sub_byte_shareA, sub_byte_shareB;
-logic [31:0] key_addition_shareA;
+logic [31:0] add_round_key_shareA;
 
 //! TEMPORARY SOLUTION THAT WORKS FOR SIMULATION 
 //! DOES NOT WORK FOR PIPELINED DESIGN!!
@@ -30,6 +28,12 @@ assign rd_ready_o = valid;
 assign decrypt      = op_saes32_decs  || op_saes32_decsm;
 assign middle_round = op_saes32_decsm || op_saes32_encsm;
 
+/*//? [1]
+It is possible to encrypt and decrypt using the the original implementation where the indeces of the bytes are flipped and the word is not rotated at the end,
+however, this does not produce the same result as in the standard. Thus, another implementation would not be able to decrypt the message if it is not using the same
+implementation as we do. 
+We are, therefore, using the approach that produce the same results as the standard expects.
+*/
 wire [7:0] bytes_in_shareA [3:0];
 assign bytes_in_shareA[3] = rs2[ 7: 0];
 assign bytes_in_shareA[2] = rs2[15: 8];
@@ -42,7 +46,6 @@ assign byte_sel_shareA = bytes_in_shareA[bs];
 //TODO need to save values in registers
 logic [7:0] shareA_masked;
 assign shareA_masked = byte_sel_shareA ^ shareB_in;
-
 
 
 // Mix Column GF(256) scalar multiplication functions
@@ -71,18 +74,19 @@ function [7:0] xtimeN;
         (scalar[3] ? xtime2(xtime2(xtime2( byte_in))): 0) ;
 endfunction
 
-wire [ 7:0] mix_b3_shareA =           xtimeN(sub_byte_shareA, (decrypt ? 11  : 3));
-wire [ 7:0] mix_b2_shareA = decrypt ? xtimeN(sub_byte_shareA, (          13     )) : sub_byte_shareA;
-wire [ 7:0] mix_b1_shareA = decrypt ? xtimeN(sub_byte_shareA, (           9     )) : sub_byte_shareA;
-wire [ 7:0] mix_b0_shareA =           xtimeN(sub_byte_shareA, (decrypt ? 14  : 2));
+wire [ 7:0] mix_b3_shareA =           xtimeN(sub_byte_shareA, (decrypt ? 11 : 3));
+wire [ 7:0] mix_b2_shareA = decrypt ? xtimeN(sub_byte_shareA, (          13   )) : sub_byte_shareA;
+wire [ 7:0] mix_b1_shareA = decrypt ? xtimeN(sub_byte_shareA, (           9   )) : sub_byte_shareA;
+wire [ 7:0] mix_b0_shareA =           xtimeN(sub_byte_shareA, (decrypt ? 14 : 2));
 
 wire [31:0] result_mix_shareA  = {mix_b3_shareA, mix_b2_shareA, mix_b1_shareA, mix_b0_shareA};
 wire [31:0] result_shareA      = middle_round ? result_mix_shareA : {24'b0, sub_byte_shareA};
 
-wire [ 7:0] mix_b3_shareB =           xtimeN(sub_byte_shareB, (decrypt ? 11  : 3));
-wire [ 7:0] mix_b2_shareB = decrypt ? xtimeN(sub_byte_shareB, (          13     )) : sub_byte_shareB;
-wire [ 7:0] mix_b1_shareB = decrypt ? xtimeN(sub_byte_shareB, (           9     )) : sub_byte_shareB;
-wire [ 7:0] mix_b0_shareB =           xtimeN(sub_byte_shareB, (decrypt ? 14  : 2));
+
+wire [ 7:0] mix_b3_shareB =           xtimeN(sub_byte_shareB, (decrypt ? 11 : 3));
+wire [ 7:0] mix_b2_shareB = decrypt ? xtimeN(sub_byte_shareB, (          13    )) : sub_byte_shareB;
+wire [ 7:0] mix_b1_shareB = decrypt ? xtimeN(sub_byte_shareB, (           9    )) : sub_byte_shareB;
+wire [ 7:0] mix_b0_shareB =           xtimeN(sub_byte_shareB, (decrypt ? 14 : 2));
 
 wire [31:0] result_mix_shareB  = {mix_b3_shareB, mix_b2_shareB, mix_b1_shareB, mix_b0_shareB};
 wire [31:0] result_shareB      = middle_round ? result_mix_shareB : {24'b0, sub_byte_shareB};
@@ -93,7 +97,7 @@ wire [31:0] rotated_shareA_tmp     =
     {32{bs == 2'b01}} & {result_shareA[23:0], result_shareA[31:24] } |
     {32{bs == 2'b10}} & {result_shareA[15:0], result_shareA[31:16] } |
     {32{bs == 2'b11}} & {result_shareA[ 7:0], result_shareA[31: 8] } ;
-
+//? Ref comment [1]
 wire [31:0] rotated_shareA = {rotated_shareA_tmp[7:0], rotated_shareA_tmp[15:8], rotated_shareA_tmp[23:16], rotated_shareA_tmp[31:24]};
 
 
@@ -102,12 +106,11 @@ wire [31:0] rotated_shareB_tmp     =
     {32{bs == 2'b01}} & {result_shareB[23:0], result_shareB[31:24] } |
     {32{bs == 2'b10}} & {result_shareB[15:0], result_shareB[31:16] } |
     {32{bs == 2'b11}} & {result_shareB[ 7:0], result_shareB[31: 8] } ;
-    
 wire [31:0] rotated_shareB = {rotated_shareB_tmp[7:0], rotated_shareB_tmp[15:8], rotated_shareB_tmp[23:16], rotated_shareB_tmp[31:24]};
 
-assign key_addition_shareA = rotated_shareA ^ rs1;
+assign add_round_key_shareA = rotated_shareA ^ rs1;
+assign rd = add_round_key_shareA ^ rotated_shareB;
 
-assign rd = key_addition_shareA ^ rotated_shareB;
 
 cv32e40x_dom_sbox i_aes_dom_sbox(
     .clk(clk),
@@ -121,9 +124,5 @@ cv32e40x_dom_sbox i_aes_dom_sbox(
     .shareA_out(sub_byte_shareA),
     .shareB_out(sub_byte_shareB)
 );
-
-// generate if(SAES_DEC_EN) begin: saes32_dec_sbox_implemented
-// end else begin: saes32_dec_sbox_not_implemented
-// end endgenerate;
 
 endmodule
