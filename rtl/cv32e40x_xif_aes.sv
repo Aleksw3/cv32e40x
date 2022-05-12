@@ -124,27 +124,16 @@ module cv32e40x_xif_aes import cv32e40x_pkg::*;
         end
     end
 
-
-    // Commit or kill instruction
-    //TODO clean, doesn't need to be like this...
     always_comb 
     begin : TO_BE_KILLED_OR_NOT_TO_BE_KILLED
-        is_commit_kill     = 1'b0;
-        is_commit_accept   = 1'b0;
         kill_instruction   = 1'b0;
         commit_instruction = 1'b0;
 
-        if (xif_commit.commit_valid && xif_commit.commit.commit_kill)
-            is_commit_kill = 1'b1;
-
-        if (xif_commit.commit_valid && !xif_commit.commit.commit_kill)
-            is_commit_accept = 1'b1;
-
         if (xif_commit.commit.id == instruction_id) 
         begin
-            if (is_commit_kill)
+            if (xif_commit.commit_valid && xif_commit.commit.commit_kill)
                 kill_instruction = 1'b1;
-            else if (is_commit_accept)
+            else if (xif_commit.commit_valid && !xif_commit.commit.commit_kill)
                 commit_instruction = 1'b1;
         end
     end
