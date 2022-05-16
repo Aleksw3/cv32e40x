@@ -343,7 +343,7 @@ module cv32e40x_wrapper
                .nmi_addr_i(core_i.nmi_addr_i),
                .*);
 
-  bind cv32e40x_xif_aes:
+  bind cv32e40x_xif_aes_wrapper:
     aes_xif_i
     cv32e40x_aes_sva
       aes_sva(.clk(clk_i),
@@ -585,7 +585,7 @@ module cv32e40x_wrapper
             .*);
 
     // instantiate aes module
-    cv32e40x_xif_aes
+    cv32e40x_xif_aes_wrapper
         #(
             .X_ID_WIDTH ( 4),  // Width of ID field.
             .X_RFR_WIDTH( 32 ), // Register file read access width for the eXtension interface

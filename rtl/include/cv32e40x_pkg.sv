@@ -201,6 +201,11 @@ typedef enum logic [AES_OPCODE_WIDTH-1:0] {
   AES32 = 6'b110011
 } aes_opcode_e;
 
+typedef struct packed {
+    logic [3:0] instr_id;
+    logic [4:0] rd_adr;
+  } id_rd_packet_t;
+
 /////////////////////////////////////////////////////////
 //    ____ ____    ____            _     _             //
 //   / ___/ ___|  |  _ \ ___  __ _(_)___| |_ ___ _ __  //

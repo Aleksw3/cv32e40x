@@ -12,9 +12,11 @@
 
 // Copy of fifo_v3 from https://github.com/pulp-platform/common_cells b2a4b2d3decdfc152ad9b4564a48ed3b2649fd6c
 
-module cv32e40x_fifo import cv32e40x_xif_aes::id_rd_packet_t #(
-    parameter bit FALL_THROUGH = 1'b0,       // fifo is in fall-through mode
-    parameter int unsigned DEPTH = 8,        // depth can be arbitrary from 0 to 2**32
+module cv32e40x_fifo import cv32e40x_pkg::*;
+#(
+    parameter bit          FALL_THROUGH = 1'b0,  // fifo is in fall-through mode
+    parameter int unsigned DEPTH        = 8,     // depth can be arbitrary from 0 to 2**32
+
     // DO NOT OVERWRITE THIS PARAMETER
     parameter int unsigned ADDR_DEPTH = (DEPTH > 1) ? $clog2(DEPTH) : 1
 ) (
@@ -37,6 +39,7 @@ module cv32e40x_fifo import cv32e40x_xif_aes::id_rd_packet_t #(
     output id_rd_packet_t data_o,   // output data
     input logic pop_i               // pop head from queue
 );
+
   // local parameter
   // FIFO depth - handle the case of pass-through, synthesizer will do constant propagation
   localparam int unsigned FIFO_DEPTH = (DEPTH > 0) ? DEPTH : 1;

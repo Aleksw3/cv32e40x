@@ -71,7 +71,9 @@ ${DESIGN_RTL_DIR}/cv32e40x_mpu.sv
 ${DESIGN_RTL_DIR}/cv32e40x_pma.sv
 ${DESIGN_RTL_DIR}/cv32e40x_pc_target.sv
 
-${DESIGN_RTL_DIR}/cv32e40x_xif_aes.sv
+${DESIGN_RTL_DIR}/cv32e40x_xif_aes_wrapper.sv
+${DESIGN_RTL_DIR}/cv32e40x_fifo.sv
+
 ${DESIGN_RTL_DIR}/cv32e40x_aes.sv
 ${DESIGN_RTL_DIR}/cv32e40x_aes_protected.sv
 ${DESIGN_RTL_DIR}/cv32e40x_dom_sbox.sv
