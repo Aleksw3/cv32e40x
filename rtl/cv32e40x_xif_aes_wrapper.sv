@@ -175,7 +175,6 @@ module cv32e40x_xif_aes_wrapper import cv32e40x_pkg::*;
     assign pop_commit_fifo = enable_output_registers & valid_aes_output;
 
     logic xif_ready;
-    int count = 0;
 
     always_comb 
     begin : OUTPUT_STAGE_LOGIC
@@ -204,12 +203,7 @@ module cv32e40x_xif_aes_wrapper import cv32e40x_pkg::*;
             fu_output_rd_adr   = 'b0;
         end else
         begin
-            count++;
-            if(count > 5) begin
-                count = 0;
-                xif_ready = xif_result.result_ready;
-            end else
-                xif_ready = 'b0;
+            xif_ready = xif_result.result_ready;
             if(enable_output_registers)
             begin
                 fu_output_result   = result_aes_o;
