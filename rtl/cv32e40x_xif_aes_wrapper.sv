@@ -224,17 +224,17 @@ module cv32e40x_xif_aes_wrapper import cv32e40x_pkg::*;
         )
         aes_prot_i
         (
-            .clk_i(clk_i)                           ,
-            .rst_n(rst_n)                     ,
-            .valid_i(valid_i)           ,
+            .clk_i(clk_i)                       ,
+            .rst_n(rst_n)                       ,
+            .valid_i(valid_i)                   ,
             .ready_i(ready_aes_input)           ,
 
             .rs1_i(rs1_i)                       , 
             .rs2_i(rs2_i)                       , 
-            .shareB_mask_i(shareB_rand)              ,
+            .shareB_mask_i(shareB_rand)         ,
             .randombits_i(randombits)           , 
             .instr_id_i(instr_id_i)             ,
-            .bs_i(byte_select_i)                  ,
+            .bs_i(byte_select_i)                ,
 
             .op_saes32_decs(decrypt_i)          ,
             .op_saes32_decsm(decrypt_middle_i)  ,
@@ -243,7 +243,7 @@ module cv32e40x_xif_aes_wrapper import cv32e40x_pkg::*;
 
             .result_o(result_aes_o)             ,
             .instr_id_o(aes_instr_id_o)         ,
-            .valid_o(valid_aes_output)       ,
+            .valid_o(valid_aes_output)          ,
             .ready_o(ready_for_aes_output)
         );
 
