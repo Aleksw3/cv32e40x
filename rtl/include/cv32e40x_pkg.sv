@@ -204,6 +204,7 @@ typedef enum logic [AES_OPCODE_WIDTH-1:0] {
 typedef struct packed {
     logic [3:0] instr_id;
     logic [4:0] rd_adr;
+    logic kill;
   } id_rd_packet_t;
 
 /////////////////////////////////////////////////////////

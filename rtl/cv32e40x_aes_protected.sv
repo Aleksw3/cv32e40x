@@ -10,8 +10,7 @@ module riscv_crypto_fu_saes32_protected
 
     input  wire [31:0]  rs1_i,
     input  wire [31:0]  rs2_i,
-    input  wire [7: 0]  shareB_mask_i, // 8-bits of random fetched from an RNG generator
-    input  wire [35:0]  randombits_i, // Randomnbits required by the masked SBox implementation to remask certain operations
+    input  wire [25:0]  randombits_i, // Randomnbits required by the masked SBox implementation to remask certain operations
     input  wire [X_ID_WIDTH-1:0]  instr_id_i,
     input  wire [1: 0]  bs_i,
 
@@ -31,6 +30,10 @@ logic [31:0] add_round_key_shareA, rs1_o;
 logic decrypt_i, middle_round_i;
 logic decrypt_o, middle_round_o;
 logic [1:0] bs_o;
+logic [17:0] randombits;
+
+logic [7:0] shareB_mask_i;
+assign shareB_mask_i = randombits_i[7:0];
 
 //! TEMPORARY SOLUTION THAT WORKS FOR SIMULATION 
 //! DOES NOT WORK FOR PIPELINED DESIGN!!
@@ -126,7 +129,6 @@ logic sbox_ready;
 logic sbox_valid_o, aes_ready_o;
 logic valid_input, decrypt, middle_round;
 logic [31:0] rs1, rs2;
-logic [35:0] randombits;
 logic [7: 0] shareB_mask, shareA_masked; 
 logic [1: 0] bs;
 logic [X_ID_WIDTH-1:0] instr_id;
@@ -134,6 +136,7 @@ logic [X_ID_WIDTH-1:0] instr_id;
 
 assign ready_i = !valid_input || sbox_ready;
 
+//Input stage register
 always_ff @( posedge clk_i, negedge rst_n ) 
 begin : AES_INPUT_REGISTERS
     if(!rst_n)
@@ -157,7 +160,7 @@ begin : AES_INPUT_REGISTERS
             bs            = bs_i;
             shareA_masked = shareA_masked_i;
             shareB_mask   = shareB_mask_i;
-            randombits    = randombits_i;
+            randombits    = randombits_i[25:8];
             instr_id      = instr_id_i;
             decrypt       = decrypt_i;
             middle_round  = middle_round_i;

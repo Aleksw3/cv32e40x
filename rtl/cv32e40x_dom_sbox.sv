@@ -10,7 +10,7 @@ module cv32e40x_dom_sbox
 
     input wire [7: 0] shareA_in,
     input wire [7: 0] shareB_in,
-    input wire [35:0] randombits_i,
+    input wire [17:0] randombits_i,
 
     input wire decrypt_i,
     input wire middle_round_i,
@@ -64,7 +64,7 @@ wire STAGE_2_RDY, STAGE_3_RDY, STAGE_4_RDY, STAGE_5_RDY, STAGE_6_RDY;
 logic stage2_valid, stage3_valid, stage4_valid, stage5_valid, stage6_valid;
 logic [X_ID_WIDTH-1:0] stage2_instr_id, stage3_instr_id, stage4_instr_id, stage5_instr_id, stage6_instr_id;
 logic stage2_decrypt, stage3_decrypt, stage4_decrypt, stage5_decrypt, stage6_decrypt;
-logic [35:0] stage2_randombits, stage3_randombits, stage4_randombits, stage5_randombits, stage6_randombits;
+logic [17:0] stage2_randombits, stage3_randombits, stage4_randombits, stage5_randombits, stage6_randombits;
 logic stage2_middle_round, stage3_middle_round, stage4_middle_round, stage5_middle_round, stage6_middle_round;
 logic [1:0] stage2_bs, stage3_bs, stage4_bs, stage5_bs, stage6_bs;
 logic [31:0] stage2_rs1, stage3_rs1, stage4_rs1, stage5_rs1, stage6_rs1;
@@ -74,7 +74,7 @@ logic [3:0] stage2_shareA_nibble_low_reg, stage3_shareA_nibble_low_reg, stage4_s
 logic [3:0] stage2_shareB_nibble_high_reg, stage3_shareB_nibble_high_reg, stage4_shareB_nibble_high_reg, stage5_shareB_nibble_high_reg;
 logic [3:0] stage2_shareB_nibble_low_reg, stage3_shareB_nibble_low_reg, stage4_shareB_nibble_low_reg, stage5_shareB_nibble_low_reg;
 
-gf16_mult_t multiplication_dom_gf16_reg_stage3, multiplication_dom_gf4_reg_stage4;
+gf16_mult_t multiplication_dom_gf16_reg_stage3;
 logic [3:0] shareA_square_scale_stage3_reg, shareB_square_scale_stage3_reg;
 logic [3:0] shareA_square_scale_gf4_stage4_reg, shareB_square_scale_gf4_stage4_reg;
 
@@ -90,7 +90,7 @@ logic [3:0] shareA_square_scale_stage2, shareB_square_scale_stage2;
 gf16_mult_t multiplication_dom_gf16_before_reg_stage2, multiplication_dom_gf16_reg_stage2;
 gf16_mult_res_t multiplication_dom_gf16_after_reg_stage3; 
 logic [3:0] shareA_multiply, shareB_multiply;
-logic [3:0] shareA_sum_multiply, shareB_sum_multiply;
+logic [3:0] stage3_shareA_sum_multiply, stage3_shareB_sum_multiply, stage4_shareA_sum_multiply, stage4_shareB_sum_multiply;
 logic [3:0] shareA_inverted_stage5, shareB_inverted_stage5;
 gf16_mult_res_t multiplication_high_after_reg_stage6, multiplication_low_after_reg_stage6;
 
@@ -99,7 +99,7 @@ logic [1:0] shareA_gf4_sum, shareB_gf4_sum;
 logic [1:0] shareA_gf4_square, shareB_gf4_square;
 logic [1:0] shareA_square_scale_gf4_stage3, shareB_square_scale_gf4_stage3;
 gf4_mult_res_t multiplication_dom_gf4_after_reg_stage4;
-gf4_mult_t multiplication_dom_gf4_before_reg_stage3;
+gf4_mult_t multiplication_dom_gf4_before_reg_stage3, multiplication_dom_gf4_reg_stage4;
 logic [1:0] shareA_multiply_stage4, shareB_multiply_stage4;
 logic [1:0] shareA_sum_multiply_stage4, shareB_sum_multiply_stage4;
 logic [1:0] shareA_inverted_sum_stage4, shareB_inverted_sum_stage4;
@@ -260,8 +260,11 @@ function gf16_mult_t dom_multiplication_before_reg_gf16;
     input [3:0] shareB_gf16_h_in;
     logic [3:0] AA_hl_mult; 
     logic [3:0] AB_hl_mult; 
+    logic [3:0] AB_hl_mult_r; 
     logic [3:0] BB_hl_mult; 
-    logic [3:0] BA_hl_mult; 
+    logic [3:0] BA_hl_mult;
+    logic [3:0] BA_hl_mult_r; 
+
     begin 
 
         AA_hl_mult = multiplication_gf16(shareA_gf16_h_in, shareA_gf16_l_in);
@@ -269,10 +272,16 @@ function gf16_mult_t dom_multiplication_before_reg_gf16;
         BB_hl_mult = multiplication_gf16(shareB_gf16_h_in, shareB_gf16_l_in);
         BA_hl_mult = multiplication_gf16(shareB_gf16_h_in, shareA_gf16_l_in);
 
+        //TODO Implement randomness here
+        `define random_value 0//4'h4
+
+        AB_hl_mult_r = AB_hl_mult ^ `random_value;
+        BA_hl_mult_r = BA_hl_mult ^ `random_value;
+
         dom_multiplication_before_reg_gf16.AA = AA_hl_mult;
-        dom_multiplication_before_reg_gf16.AB = AB_hl_mult;
+        dom_multiplication_before_reg_gf16.AB = AB_hl_mult_r;
         dom_multiplication_before_reg_gf16.BB = BB_hl_mult;
-        dom_multiplication_before_reg_gf16.BA = BA_hl_mult;
+        dom_multiplication_before_reg_gf16.BA = BA_hl_mult_r;
     end endfunction;
 
 function gf16_mult_res_t dom_multiplication_after_reg_gf16;
@@ -281,8 +290,6 @@ function gf16_mult_res_t dom_multiplication_after_reg_gf16;
     logic [3:0] AB_hl_mult; 
     logic [3:0] BB_hl_mult; 
     logic [3:0] BA_hl_mult; 
-    logic [3:0] AB_hl_mult_r;
-    logic [3:0] BA_hl_mult_r;
     logic [3:0] shareA_result;
     logic [3:0] shareB_result;
 
@@ -292,14 +299,9 @@ function gf16_mult_res_t dom_multiplication_after_reg_gf16;
         AB_hl_mult = shares_i.AB;
         BB_hl_mult = shares_i.BB;
         BA_hl_mult = shares_i.BA;
-        //TODO Implement randomness here
-        `define random_value 0//4'h4
 
-        AB_hl_mult_r = AB_hl_mult ^ `random_value;
-        BA_hl_mult_r = BA_hl_mult ^ `random_value;
-
-        shareA_result = AA_hl_mult ^ AB_hl_mult_r;
-        shareB_result = BB_hl_mult ^ BA_hl_mult_r;
+        shareA_result = AA_hl_mult ^ AB_hl_mult;
+        shareB_result = BB_hl_mult ^ BA_hl_mult;
 
         dom_multiplication_after_reg_gf16.shareA = shareA_result;
         dom_multiplication_after_reg_gf16.shareB = shareB_result;
@@ -440,36 +442,36 @@ function gf4_mult_t dom_multiplication_before_reg_gf4;
     input [1:0] shareB_h_in;
     logic [1:0] AA_hl_mult;
     logic [1:0] AB_hl_mult;
+    logic [1:0] AB_hl_mult_r;
     logic [1:0] BB_hl_mult;
     logic [1:0] BA_hl_mult;
+    logic [1:0] BA_hl_mult_r;
     begin
         AA_hl_mult = multiplication_gf4(shareA_h_in, shareA_l_in);
         AB_hl_mult = multiplication_gf4(shareA_h_in, shareB_l_in);
         BB_hl_mult = multiplication_gf4(shareB_h_in, shareB_l_in);
         BA_hl_mult = multiplication_gf4(shareB_h_in, shareA_l_in);
 
+        //TODO Implement randomness here
+        `define random_value2 2'b0
+        AB_hl_mult_r = AB_hl_mult;// ^ `random_value2;
+        BA_hl_mult_r = BA_hl_mult;// ^ `random_value2;
+
         dom_multiplication_before_reg_gf4.AA = AA_hl_mult;
-        dom_multiplication_before_reg_gf4.AB = AB_hl_mult;
+        dom_multiplication_before_reg_gf4.AB = AB_hl_mult_r;
         dom_multiplication_before_reg_gf4.BB = BB_hl_mult;
-        dom_multiplication_before_reg_gf4.BA = BA_hl_mult;
+        dom_multiplication_before_reg_gf4.BA = BA_hl_mult_r;
     end 
 endfunction;
 
 
 function gf4_mult_res_t dom_multiplication_after_reg_gf4;
     input gf4_mult_t shares_i;
-    logic [1:0] AB_hl_mult_r;
-    logic [1:0] BA_hl_mult_r;
     logic [1:0] shareA_result;
     logic [1:0] shareB_result;
     begin
-        //TODO Implement randomness here
-        `define random_value2 2'b10
-        AB_hl_mult_r = shares_i.AB ^ `random_value2;
-        BA_hl_mult_r = shares_i.BA ^ `random_value2;
-
-        shareA_result = shares_i.AA ^ AB_hl_mult_r;
-        shareB_result = shares_i.BB ^ BA_hl_mult_r;
+        shareA_result = shares_i.AA ^ shares_i.AB;
+        shareB_result = shares_i.BB ^ shares_i.BA;
 
         dom_multiplication_after_reg_gf4.shareA = shareA_result;
         dom_multiplication_after_reg_gf4.shareB = shareB_result;
@@ -496,7 +498,6 @@ function logic [1:0][1:0] dom_multiplication_gf4;
         BA_hl_mult = multiplication_gf4(shareB_h_in, shareA_l_in);
 
         //TODO Implement randomness here
-        `define random_value2 2'b10
         AB_hl_mult_r = AB_hl_mult ^ `random_value2;
         BA_hl_mult_r = BA_hl_mult ^ `random_value2;
 
@@ -611,6 +612,9 @@ always_ff @( posedge clk_i, negedge rst_n ) begin : SBOX_PIPELINE_REGISTERS
             shareA_square_scale_gf4_stage4_reg = shareA_square_scale_gf4_stage3;
             shareB_square_scale_gf4_stage4_reg = shareB_square_scale_gf4_stage3;
 
+            stage4_shareA_sum_multiply = stage3_shareA_sum_multiply;
+            stage4_shareB_sum_multiply = stage3_shareB_sum_multiply;
+
             stage4_shareA_nibble_high_reg      = stage3_shareA_nibble_high_reg;
             stage4_shareA_nibble_low_reg       = stage3_shareA_nibble_low_reg;
             stage4_shareB_nibble_high_reg      = stage3_shareB_nibble_high_reg;
@@ -642,20 +646,37 @@ always_ff @( posedge clk_i, negedge rst_n ) begin : SBOX_PIPELINE_REGISTERS
 
         if(STAGE_2_RDY)
         begin
-            //Register Between stage 1 & 2
-            stage2_valid                       = valid_i;
-            stage2_instr_id                    = instr_id_i;
-            stage2_decrypt                     = decrypt_i;
-            stage2_randombits                  = randombits_i;
-            stage2_middle_round                = middle_round_i;
-            stage2_bs                          = bs_i;
-            stage2_rs1                         = rs1_i;
+            if(valid_i) begin
+                //Register Between stage 1 & 2
+                stage2_valid                       = valid_i;
+                stage2_instr_id                    = instr_id_i;
+                stage2_decrypt                     = decrypt_i;
+                stage2_randombits                  = randombits_i;
+                stage2_middle_round                = middle_round_i;
+                stage2_bs                          = bs_i;
+                stage2_rs1                         = rs1_i;
 
 
-            stage2_shareA_nibble_high_reg      = shareA_isomorphic_trans[7:4];
-            stage2_shareA_nibble_low_reg       = shareA_isomorphic_trans[3:0];
-            stage2_shareB_nibble_high_reg      = shareB_isomorphic_trans[7:4];
-            stage2_shareB_nibble_low_reg       = shareB_isomorphic_trans[3:0];
+                stage2_shareA_nibble_high_reg      = shareA_isomorphic_trans[7:4];
+                stage2_shareA_nibble_low_reg       = shareA_isomorphic_trans[3:0];
+                stage2_shareB_nibble_high_reg      = shareB_isomorphic_trans[7:4];
+                stage2_shareB_nibble_low_reg       = shareB_isomorphic_trans[3:0];
+            end else begin
+                //Register Between stage 1 & 2
+                stage2_valid                       = 'b0;
+                stage2_instr_id                    = 'b0;
+                stage2_decrypt                     = 'b0;
+                stage2_randombits                  = 'b0;
+                stage2_middle_round                = 'b0;
+                stage2_bs                          = 'b0;
+                stage2_rs1                         = 'b0;
+
+
+                stage2_shareA_nibble_high_reg      = 'b0;
+                stage2_shareA_nibble_low_reg       = 'b0;
+                stage2_shareB_nibble_high_reg      = 'b0;
+                stage2_shareB_nibble_low_reg       = 'b0;
+            end
 
         end
     end
@@ -688,8 +709,8 @@ begin: GF256_INVERSION_PIPELINED
     shareA_multiply = multiplication_dom_gf16_after_reg_stage3.shareA;
     shareB_multiply = multiplication_dom_gf16_after_reg_stage3.shareB;
 
-    shareA_sum_multiply = shareA_multiply ^ shareA_square_scale_stage3_reg;
-    shareB_sum_multiply = shareB_multiply ^ shareB_square_scale_stage3_reg;
+    stage3_shareA_sum_multiply = shareA_multiply ^ shareA_square_scale_stage3_reg;
+    stage3_shareB_sum_multiply = shareB_multiply ^ shareB_square_scale_stage3_reg;
 
     // GF16 inversion, see combinatoric block below
     //-------------------Stage 5---------------------------------
@@ -717,8 +738,8 @@ always_comb
 begin : GF16_INVERSION_PIPELINED
     //-------------------Stage 3-----------------------------------
 
-    shareA_gf4_sum = shareA_sum_multiply[3:2] ^ shareA_sum_multiply[1:0];
-    shareB_gf4_sum = shareB_sum_multiply[3:2] ^ shareB_sum_multiply[1:0];
+    shareA_gf4_sum = stage3_shareA_sum_multiply[3:2] ^ stage3_shareA_sum_multiply[1:0];
+    shareB_gf4_sum = stage3_shareB_sum_multiply[3:2] ^ stage3_shareB_sum_multiply[1:0];
 
     shareA_gf4_square       = square_gf4(shareA_gf4_sum);
     shareB_gf4_square       = square_gf4(shareB_gf4_sum);
@@ -726,7 +747,7 @@ begin : GF16_INVERSION_PIPELINED
     shareA_square_scale_gf4_stage3 = scale_N_gf4(shareA_gf4_square);
     shareB_square_scale_gf4_stage3 = scale_N_gf4(shareB_gf4_square);
 
-    multiplication_dom_gf4_before_reg_stage3 = dom_multiplication_before_reg_gf4(shareA_sum_multiply[1:0], shareA_sum_multiply[3:2], shareB_sum_multiply[1:0], shareB_sum_multiply[3:2]);
+    multiplication_dom_gf4_before_reg_stage3 = dom_multiplication_before_reg_gf4(stage3_shareA_sum_multiply[1:0], stage3_shareA_sum_multiply[3:2], stage3_shareB_sum_multiply[1:0], stage3_shareB_sum_multiply[3:2]);
 
     //-------------------Stage 4-----------------------------------
     multiplication_dom_gf4_after_reg_stage4  = dom_multiplication_after_reg_gf4(multiplication_dom_gf4_reg_stage4);
@@ -741,8 +762,8 @@ begin : GF16_INVERSION_PIPELINED
     shareB_inverted_sum_stage4 = inverse_gf4(shareB_sum_multiply_stage4);
 
 
-    result_h_before_reg_gf4_stage4 = dom_multiplication_before_reg_gf4(shareA_sum_multiply[1:0], shareA_inverted_sum_stage4, shareB_sum_multiply[1:0], shareB_inverted_sum_stage4);
-    result_l_before_reg_gf4_stage4 = dom_multiplication_before_reg_gf4(shareA_sum_multiply[3:2], shareA_inverted_sum_stage4, shareB_sum_multiply[3:2], shareB_inverted_sum_stage4);
+    result_h_before_reg_gf4_stage4 = dom_multiplication_before_reg_gf4(stage4_shareA_sum_multiply[1:0], shareA_inverted_sum_stage4, stage4_shareB_sum_multiply[1:0], shareB_inverted_sum_stage4);
+    result_l_before_reg_gf4_stage4 = dom_multiplication_before_reg_gf4(stage4_shareA_sum_multiply[3:2], shareA_inverted_sum_stage4, stage4_shareB_sum_multiply[3:2], shareB_inverted_sum_stage4);
     
     //-------------------(Parts of) Stage 5---------------------------
     
